@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     agent_host: str = "0.0.0.0"
     agent_port: int = 8000
     agent_name: str = "nekoni"
+    # Explicit public URL for the agent (used in QR code for mobile pairing).
+    # If unset, falls back to auto-detected LAN IP + agent_port.
+    agent_url: str = ""
 
     # Ollama
     ollama_base_url: str = "http://localhost:11434"

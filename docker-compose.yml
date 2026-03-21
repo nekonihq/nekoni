@@ -8,11 +8,11 @@ services:
       - "11434:11434"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   ollama-pull:
     image: ollama/ollama:latest
@@ -44,9 +44,10 @@ services:
       AGENT_HOST: "0.0.0.0"
       AGENT_PORT: "8000"
       AGENT_NAME: "${AGENT_NAME:-nekoni}"
+      AGENT_URL: "${AGENT_URL:-}"
       OLLAMA_BASE_URL: "http://ollama:11434"
       OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3.2}"
-      SIGNAL_URL: "${SIGNAL_URL}"
+      SIGNAL_URL: "${SIGNAL_URL:-wss://signal.nekoni.dev}"
       AGENT_KEYS_DIR: "/data/keys"
       CHROMA_PATH: "/data/chroma"
       SQLITE_PATH: "/data/sqlite/memory.db"
@@ -63,15 +64,16 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
-      interval: 15s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 15s
 
   dashboard:
     build:
-      context: ./apps/dashboard
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
     container_name: nekoni-dashboard
     ports:
       - "8080:80"

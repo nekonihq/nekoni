@@ -36,7 +36,6 @@ class TraceManager:
         await db.commit()
 
     async def connect(self, ws: WebSocket) -> None:
-        await ws.accept()
         self._connections.append(ws)
         print(f"[traces] Dashboard connected ({len(self._connections)} total)")
 

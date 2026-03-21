@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -12,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .agent.context import SessionContext
 from .agent.history import load_messages, save_message
 from .agent.loop import AgentLoop
-from .api.auth import auth_router, get_current_token, require_auth
+from .api.auth import auth_router, get_current_token, load_token_on_startup, require_auth
 from .api.routes import public_router, router
 from .api.ws import trace_manager
 from .config import settings
@@ -248,6 +250,8 @@ async def _on_skill_message(msg_type: str, payload: dict) -> dict:
 async def lifespan(app: FastAPI):
     global _llm, _agent_loop, _peer
 
+    load_token_on_startup()
+
     _llm = OllamaClient()
 
     tool_registry.register(GetTimeTool())
@@ -313,11 +317,26 @@ app.include_router(router, dependencies=[Depends(require_auth)])
 
 @app.websocket("/ws/traces")
 async def traces_ws(websocket: WebSocket):
-    token_param = websocket.query_params.get("token")
+    await websocket.accept()
+
+    # Try query-param token first; fall back to first-message auth.
+    # First-message auth is preferred because Cloudflare and some reverse
+    # proxies strip query parameters on WebSocket upgrade requests.
+    token = websocket.query_params.get("token", "")
     current = get_current_token()
-    if not current or token_param != current:
+
+    if not token or token != current:
+        # Wait up to 5 s for {"type": "auth", "token": "..."}
+        try:
+            raw = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
+            token = json.loads(raw).get("token", "")
+        except Exception:
+            token = ""
+
+    if not current or token != current:
         await websocket.close(code=4001)
         return
+
     await trace_manager.connect(websocket)
     try:
         while True:

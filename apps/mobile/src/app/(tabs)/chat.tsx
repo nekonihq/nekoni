@@ -16,7 +16,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native'
-import { useNavigation, useRouter } from 'expo-router'
+import { useNavigation, useRouter, useFocusEffect } from 'expo-router'
 import Toast from 'react-native-toast-message'
 import { useIdentity } from '../../hooks/useIdentity'
 import { useWebRTC } from '../../hooks/useWebRTC'
@@ -40,6 +40,8 @@ export default function ChatScreen() {
   useEffect(() => {
     activeAgentRef.current = activeAgent
   }, [activeAgent])
+
+  const rtcStateRef = useRef<string>('idle')
 
   const [conversationId, setConversationId] = useState<
     string | null
@@ -88,6 +90,7 @@ export default function ChatScreen() {
   }, [disconnect])
 
   useEffect(() => {
+    rtcStateRef.current = rtcState
     setSharedRtcState(rtcState)
   }, [rtcState])
 
@@ -219,7 +222,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (
-      rtcState === 'disconnected' &&
+      (rtcState === 'disconnected' || rtcState === 'error') &&
       activeAgent &&
       identity
     ) {
@@ -232,6 +235,33 @@ export default function ChatScreen() {
       return () => clearTimeout(t)
     }
   }, [rtcState])
+
+  // Reconnect whenever this screen comes into focus (e.g. returning from
+  // the pair screen after pairing — at that point activeAgent and identity
+  // are already stable so the [activeAgent, identity] effect won't re-fire).
+  // rtcState is read via ref so this callback doesn't change on every state
+  // transition (which would compete with the retry effect below).
+  useFocusEffect(
+    useCallback(() => {
+      const s = rtcStateRef.current
+      if (
+        activeAgentRef.current &&
+        identity &&
+        (s === 'idle' || s === 'disconnected' || s === 'error')
+      ) {
+        connect(activeAgentRef.current)
+      }
+    }, [identity, connect]),
+  )
+
+  useEffect(() => {
+    if (authState === 'failed') {
+      // dc.onclose does not reliably fire in RN WebRTC when the remote side
+      // closes the channel (e.g. after auth_failed). Force a disconnect so the
+      // retry loop can take over regardless.
+      disconnect()
+    }
+  }, [authState])
 
   useEffect(() => {
     if (

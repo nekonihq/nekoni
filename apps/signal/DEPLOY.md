@@ -1,6 +1,20 @@
-# Signal Server — AWS Lightsail Deployment
+# Signal Server — Deployment
 
 The signal server is a lightweight Node.js WebSocket relay (~10 MB RAM idle).
+
+## Hosted instance
+
+A public signal server is available at **`wss://signal.nekoni.dev`** and is the
+default in all configs. You don't need to deploy your own unless you want full
+control or prefer not to rely on a shared server.
+
+To use the hosted instance, no action needed — it's already the default
+`SIGNAL_URL` in `.env.example` and `docker-compose.yml`.
+
+---
+
+## Self-hosting (optional)
+
 Recommended host: **AWS Lightsail $3.50/month** (512 MB RAM, 1 vCPU, 20 GB SSD).
 
 ---

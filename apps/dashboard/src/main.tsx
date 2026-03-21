@@ -14,6 +14,7 @@ import { MonitorPage } from './pages/Monitor'
 import { KnowledgePage } from './pages/Knowledge'
 import { SkillsPage } from './pages/Skills'
 import { SkillEditorPage } from './pages/SkillEditor'
+import { SettingsPage } from './pages/Settings'
 import { LoginPage } from './pages/Login'
 import { useAuth } from './hooks/useAuth'
 
@@ -47,6 +48,7 @@ const App = () => {
         <NavLink to="/monitor">Monitor</NavLink>
         <NavLink to="/knowledge">Knowledge</NavLink>
         <NavLink to="/skills">Skills</NavLink>
+        <NavLink to="/settings">Settings</NavLink>
         <span className="nav-spacer" />
         <Button
           variant="ghost"
@@ -73,6 +75,7 @@ const App = () => {
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/skills/new" element={<SkillEditorPage />} />
           <Route path="/skills/:id" element={<SkillEditorPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </div>
     </BrowserRouter>

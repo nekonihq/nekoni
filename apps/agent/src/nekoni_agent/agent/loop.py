@@ -12,6 +12,7 @@ from typing import Any
 from ..llm.client import OllamaClient
 from ..llm.prompts import SYSTEM_PROMPT
 from ..rag.pipeline import RAGPipeline
+from ..settings.models import get_setting
 from ..tools.registry import ToolRegistry
 from .context import SessionContext
 
@@ -69,9 +70,15 @@ class AgentLoop:
             print(f"[loop] RAG query failed: {e}")
             rag_chunks = []
 
-        # Build system prompt
+        # Build system prompt — use custom prompt from DB if set
         tools_json = json.dumps(self.tools.to_json_schema(), indent=2)
-        system_content = SYSTEM_PROMPT.format(tools_json=tools_json)
+        try:
+            custom_prompt = await get_setting("system_prompt")
+        except Exception as e:
+            print(f"[loop] Failed to load custom system prompt: {e}")
+            custom_prompt = None
+        base_prompt = custom_prompt if custom_prompt is not None else SYSTEM_PROMPT
+        system_content = base_prompt.format(tools_json=tools_json)
         if rag_chunks:
             rag_context = "\n---\n".join(
                 f"[{c.get('source', 'unknown')}]: {c.get('content', '')}"

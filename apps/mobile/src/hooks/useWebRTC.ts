@@ -78,12 +78,13 @@ export function useWebRTC({
       dcRef.current.onopen = null
       dcRef.current.onclose = null
       dcRef.current.onmessage = null
-      dcRef.current.close()
+      try { dcRef.current.close() } catch {}
       dcRef.current = null
     }
     if (pcRef.current) {
       pcRef.current.onicecandidate = null
-      pcRef.current.close()
+      pcRef.current.oniceconnectionstatechange = null
+      try { pcRef.current.close() } catch {}
       pcRef.current = null
     }
   }, [])
@@ -224,22 +225,12 @@ export function useWebRTC({
           pubKey: identity.publicKeyB64,
           ts: Date.now(),
         }
-        const sig = signPayload(joinPayload, identity)
-        const sortedKeys = Object.keys(joinPayload).sort()
-        const signedStr = JSON.stringify(
-          joinPayload,
-          sortedKeys,
+        ws.send(
+          JSON.stringify({
+            ...joinPayload,
+            sig: signPayload(joinPayload, identity),
+          }),
         )
-        console.log(
-          '[webrtc:join] payload str :',
-          signedStr,
-        )
-        console.log('[webrtc:join] sig         :', sig)
-        console.log(
-          '[webrtc:join] pubKey      :',
-          identity.publicKeyB64,
-        )
-        ws.send(JSON.stringify({ ...joinPayload, sig }))
       }
 
       ws.onmessage = async (evt: any) => {
@@ -259,23 +250,30 @@ export function useWebRTC({
           agentClientId = msg.clientId
 
           if (offerSent) {
+            // If the DataChannel is already open the WebRTC session is alive.
+            // The signal WS on the agent side just reconnected — ignore.
+            if (dcRef.current?.readyState === 'open') {
+              console.log(
+                '[webrtc] peer_joined but DC already open, ignoring',
+              )
+              return
+            }
             if (remoteDescSet) {
               // Negotiation was complete — agent signal WS
               // reconnected, need a fresh WebRTC session.
               console.log(
                 '[webrtc] peer_joined after negotiation, restarting',
               )
-              connectGenRef.current++
-              cleanup()
-              setState('disconnected')
             } else {
-              // Still mid-negotiation — agent WS blip.
-              // Update the target clientId and keep going.
+              // Mid-negotiation — agent rejoined with new clientId.
+              // The old offer was never received, must restart.
               console.log(
-                '[webrtc] peer_joined during negotiation, ignoring',
+                '[webrtc] peer_joined during negotiation, restarting',
               )
-              agentClientId = msg.clientId
             }
+            connectGenRef.current++
+            cleanup()
+            setState('disconnected')
             return
           }
           offerSent = true

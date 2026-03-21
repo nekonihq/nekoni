@@ -29,27 +29,41 @@ public_router = APIRouter()  # phone-facing, no auth required
 _pending_pairings: dict[str, dict] = {}
 
 
+def _get_lan_ip() -> str | None:
+    """Discover the outbound LAN interface IP."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception as e:
+        print(f"[routes] LAN IP resolution failed: {e}")
+        return None
+
+
 def _resolve_signal_url() -> str:
     """Return signal URL with localhost/0.0.0.0 replaced by the machine's LAN IP."""
-    import socket
-
     url = settings.signal_url
     if not any(h in url for h in ("localhost", "0.0.0.0", "127.0.0.1")):
         return url
-    try:
-        # Connect to a public address to discover the outbound LAN interface IP
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        lan_ip = s.getsockname()[0]
-        s.close()
-    except Exception as e:
-        print(f"[routes] LAN IP resolution failed: {e}")
+    lan_ip = _get_lan_ip()
+    if not lan_ip:
         return url
     return (
         url.replace("localhost", lan_ip)
         .replace("0.0.0.0", lan_ip)
         .replace("127.0.0.1", lan_ip)
     )
+
+
+def _resolve_agent_url() -> str:
+    """Return the agent's HTTP URL reachable by the mobile app."""
+    if settings.agent_url:
+        return settings.agent_url.rstrip("/")
+    lan_ip = _get_lan_ip() or "localhost"
+    return f"http://{lan_ip}:{settings.agent_port}"
 
 
 def get_rag() -> RAGPipeline:
@@ -64,7 +78,7 @@ def get_trace_manager():
     return trace_manager
 
 
-@router.get("/health")
+@public_router.get("/health")
 async def health():
     return {"status": "ok", "ts": int(time.time() * 1000), "agent": settings.agent_name}
 
@@ -78,6 +92,7 @@ async def get_qr():
     return {
         "agentPubKey": pub_key,
         "signalUrl": _resolve_signal_url(),
+        "agentUrl": _resolve_agent_url(),
         "roomId": room_id,
         "agentName": settings.agent_name,
     }
@@ -96,6 +111,7 @@ async def get_qr_image():
         {
             "agentPubKey": pub_key,
             "signalUrl": _resolve_signal_url(),
+            "agentUrl": _resolve_agent_url(),
             "roomId": room_id,
             "agentName": settings.agent_name,
         }
@@ -427,3 +443,29 @@ async def list_tools():
     from ..main import tool_registry
 
     return tool_registry.to_json_schema()
+
+
+# ── Settings ──────────────────────────────────────────────────────────────────
+
+SYSTEM_PROMPT_KEY = "system_prompt"
+
+
+class SystemPromptBody(BaseModel):
+    prompt: str
+
+
+@router.get("/api/settings/system-prompt")
+async def get_system_prompt():
+    from ..settings.models import get_setting
+    from ..llm.prompts import SYSTEM_PROMPT
+
+    value = await get_setting(SYSTEM_PROMPT_KEY)
+    return {"prompt": value if value is not None else SYSTEM_PROMPT}
+
+
+@router.put("/api/settings/system-prompt")
+async def put_system_prompt(body: SystemPromptBody):
+    from ..settings.models import set_setting
+
+    await set_setting(SYSTEM_PROMPT_KEY, body.prompt)
+    return {"status": "ok"}

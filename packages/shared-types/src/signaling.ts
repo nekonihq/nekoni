@@ -70,7 +70,8 @@ export interface ErrorMessage {
 /** QR Code payload – rendered by dashboard, scanned by mobile */
 export interface AgentQRPayload {
   agentPubKey: string   // base64url Ed25519 public key
-  signalUrl: string     // ws://192.168.x.x:3000
+  signalUrl: string     // wss://signal.nekoni.dev
+  agentUrl: string      // http://192.168.x.x:8000
   roomId: string
   agentName: string
 }

@@ -63,9 +63,13 @@ HOME MACHINE
 ```bash
 git clone https://github.com/nekonihq/nekoni && cd nekoni
 
-# Copy env template and set SIGNAL_URL
+# Copy env template
 cp .env.example .env
-# edit .env — set SIGNAL_URL and DASHBOARD_PASSWORD at minimum
+# Set AGENT_URL to your machine's LAN IP (required for mobile pairing):
+#   macOS:   ipconfig getifaddr en0
+#   Linux:   hostname -I | awk '{print $1}'
+#   Windows: ipconfig | findstr "IPv4"
+# Also set DASHBOARD_PASSWORD
 
 # Create data dirs (run once)
 ./scripts/setup.sh
@@ -212,10 +216,11 @@ Copy `.env.example` to `.env` and adjust as needed.
 
 | Variable             | Default                  | Description                               |
 | -------------------- | ------------------------ | ----------------------------------------- |
-| `SIGNAL_URL`         | _(required)_             | Externally hosted signal server WebSocket |
+| `SIGNAL_URL`         | `wss://signal.nekoni.dev` | Signal server WebSocket (self-host optional) |
 | `OLLAMA_MODEL`       | `llama3.2`               | Model to pull and use (pulled on startup) |
 | `DASHBOARD_USERNAME` | `admin`                  | Dashboard login username                  |
 | `DASHBOARD_PASSWORD` | `nekoni`                 | Dashboard login password                  |
+| `AGENT_URL`          | *(required)*             | LAN URL of this machine (`http://192.168.x.x:8000`) — embedded in QR code for mobile pairing |
 | `AGENT_NAME`         | `nekoni`                 | Agent display name                        |
 | `AGENT_PORT`         | `8000`                   | Agent HTTP port                           |
 | `OLLAMA_BASE_URL`    | `http://ollama:11434`    | Ollama endpoint                           |

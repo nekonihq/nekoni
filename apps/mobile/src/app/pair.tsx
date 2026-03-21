@@ -25,6 +25,7 @@ import { useAgentContext } from '../AgentContext'
 interface AgentQRPayload {
   agentPubKey: string
   signalUrl: string
+  agentUrl: string
   roomId: string
   agentName: string
 }
@@ -62,19 +63,14 @@ export default function PairScreen() {
           text1: 'Already paired',
           text2: `${payload.agentName} is already in your agents list`,
         })
-        router.push('/')
+        router.back()
         return
       }
 
-      const signalUrlObj = new URL(
-        payload.signalUrl
-          .replace('ws://', 'http://')
-          .replace('wss://', 'https://'),
-      )
-      const agentBaseUrl = `http://${signalUrlObj.hostname}:8000`
+      const agentBaseUrl = payload.agentUrl.replace(/\/$/, '')
       const pairUrl = `${agentBaseUrl}/api/pair`
       console.log('[pair] signal URL:', payload.signalUrl)
-      console.log('[pair] agent base URL:', agentBaseUrl)
+      console.log('[pair] agent URL:', agentBaseUrl)
       console.log('[pair] POST →', pairUrl)
 
       const ts = Date.now()
@@ -141,7 +137,7 @@ export default function PairScreen() {
         result.status === 'already_approved'
           ? 'Device already approved. You can connect now.'
           : 'Approve the connection on your desktop dashboard.',
-        [{ text: 'OK', onPress: () => router.push('/') }],
+        [{ text: 'OK', onPress: () => router.back() }],
       )
     } catch (e: any) {
       console.error('[pair] error:', e)
