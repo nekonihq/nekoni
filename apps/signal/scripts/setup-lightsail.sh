@@ -14,6 +14,16 @@ echo "App dir: $APP_DIR"
 echo "Port   : $PORT"
 echo ""
 
+# ── Swap (prevents OOM on 512 MB instances) ───────────────────────────────────
+if [[ ! -f /swapfile ]]; then
+  echo "Creating 1 GB swap file..."
+  sudo fallocate -l 1G /swapfile
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile
+  sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+fi
+
 # ── System packages ────────────────────────────────────────────────────────────
 echo "[1/4] Installing system dependencies..."
 sudo apt-get update -q
@@ -36,13 +46,14 @@ NODE_DIR="$(dirname "$NODE_BIN")"
 sudo ln -sf "$NODE_DIR/node" /usr/local/bin/node
 sudo ln -sf "$NODE_DIR/npm"  /usr/local/bin/npm
 
-npm install -g pnpm pm2 --silent
+npm install -g pm2 --silent
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 echo "[3/4] Installing dependencies and building..."
 cd "$APP_DIR"
-pnpm install --frozen-lockfile
-pnpm build
+# Use npm directly — avoids resolving the full pnpm monorepo workspace
+npm install
+npm run build
 
 # ── PM2 ───────────────────────────────────────────────────────────────────────
 echo "[4/4] Starting with PM2..."
@@ -56,15 +67,15 @@ if [[ "$STARTUP_CMD" == sudo* ]]; then
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
-PUBLIC_IP="$(curl -sf http://checkip.amazonaws.com || echo '<static-ip>')"
-
 echo ""
 echo "=== Setup complete ==="
 echo ""
-echo "Signal server : ws://$PUBLIC_IP:$PORT"
-echo "Health check  : http://$PUBLIC_IP:$PORT/health"
+echo "Signal server is running on port $PORT."
 echo ""
-echo "Set in your home machine .env:"
-echo "  SIGNAL_URL=ws://$PUBLIC_IP:$PORT"
+echo "Next steps:"
+echo "  1. Point a domain at this instance's static IP"
+echo "  2. Set up Caddy for TLS (see DEPLOY.md)"
+echo "  3. Set in your home machine .env:"
+echo "       SIGNAL_URL=wss://<your-domain>"
 echo ""
 pm2 status

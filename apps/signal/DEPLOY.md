@@ -3,9 +3,6 @@
 The signal server is a lightweight Node.js WebSocket relay (~10 MB RAM idle).
 Recommended host: **AWS Lightsail $3.50/month** (512 MB RAM, 1 vCPU, 20 GB SSD).
 
-All signaling messages are Ed25519-signed and the actual chat data travels over
-an encrypted WebRTC DataChannel — plain `ws://` over a static IP is sufficient.
-
 ---
 
 ## 1. Create Lightsail instance
@@ -21,22 +18,34 @@ an encrypted WebRTC DataChannel — plain `ws://` over a static IP is sufficient
 Lightsail → **Networking** tab → **Create static IP** → attach to `nekoni-signal`.
 Your IP will not change on reboot.
 
-### Open firewall port
+### Open firewall ports
 
-Lightsail → instance → **Networking** tab → **IPv4 firewall** → Add rule:
+Lightsail → instance → **Networking** tab → **IPv4 firewall** → Add rules:
 
-| Protocol | Port | Purpose       |
-| -------- | ---- | ------------- |
-| TCP      | 3000 | Signal server |
+| Protocol | Port | Purpose            |
+| -------- | ---- | ------------------ |
+| TCP      | 80   | Caddy (HTTP→HTTPS) |
+| TCP      | 443  | Caddy (HTTPS/WSS)  |
 
-Port 22 (SSH) is open by default.
+Port 22 (SSH) is open by default. Port 3000 does **not** need to be public — Caddy proxies it.
 
 ---
 
-## 2. Run the setup script
+## 2. Point a domain at the instance
 
-Open the instance SSH console in Lightsail (browser-based, no local SSH needed),
-then clone the repo and run the setup script:
+Add a DNS **A record** pointing your subdomain to the static IP:
+
+```
+signal.yourdomain.com  A  <static-ip>
+```
+
+Wait for DNS to propagate before running the setup script.
+
+---
+
+## 3. Run the setup script
+
+Open the instance SSH console in Lightsail (browser-based), then:
 
 ```bash
 git clone https://github.com/nekonihq/nekoni
@@ -44,20 +53,46 @@ bash nekoni/apps/signal/scripts/setup-lightsail.sh
 ```
 
 The script will:
+- Create a 1 GB swap file (prevents OOM on 512 MB RAM)
 - Install Node.js 22 via `fnm`
-- Install `pnpm` and `pm2`
-- Build the signal server in place
+- Install `pm2`
+- Build the signal server
 - Start it under PM2 and register it to auto-start on reboot
-- Print the `SIGNAL_URL` to paste into your `.env`
 
 ---
 
-## 3. Update your `.env`
+## 4. Configure TLS with Caddy
 
-On your home machine set the URL printed by the script:
+In the same SSH console:
+
+```bash
+sudo apt-get install -y caddy
+sudo tee /etc/caddy/Caddyfile <<EOF
+signal.yourdomain.com {
+    reverse_proxy localhost:3000
+}
+EOF
+sudo systemctl enable caddy
+sudo systemctl restart caddy
+```
+
+Caddy automatically obtains and renews a Let's Encrypt certificate.
+
+Verify:
+
+```bash
+curl https://signal.yourdomain.com/health
+# → {"status":"ok"}
+```
+
+---
+
+## 5. Update your `.env`
+
+On your home machine:
 
 ```
-SIGNAL_URL=ws://<static-ip>:3000
+SIGNAL_URL=wss://signal.yourdomain.com
 ```
 
 Then restart the agent:
@@ -80,15 +115,6 @@ bash apps/signal/scripts/deploy.sh
 
 ---
 
-## Health check
-
-```bash
-curl http://<static-ip>:3000/health
-# → {"status":"ok"}
-```
-
----
-
 ## PM2 quick reference
 
 ```bash
@@ -97,22 +123,3 @@ pm2 logs nekoni-signal        # live logs
 pm2 restart nekoni-signal     # restart
 pm2 stop nekoni-signal        # stop
 ```
-
----
-
-## Optional: domain + TLS (`wss://`)
-
-Only needed if you want encrypted WebSocket transport. Install Caddy:
-
-```bash
-sudo apt-get install -y caddy
-sudo tee /etc/caddy/Caddyfile <<EOF
-signal.yourdomain.com {
-    reverse_proxy localhost:3000
-}
-EOF
-sudo systemctl restart caddy
-```
-
-Open ports 80 + 443 instead of 3000 in the Lightsail firewall, point a DNS A
-record at the static IP, then set `SIGNAL_URL=wss://signal.yourdomain.com`.

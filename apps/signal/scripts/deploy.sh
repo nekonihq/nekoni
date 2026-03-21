@@ -14,8 +14,8 @@ cd "$APP_DIR"
 export PATH="$HOME/.local/share/fnm:$PATH"
 eval "$(fnm env)"
 
-pnpm install --frozen-lockfile
-pnpm build
+npm install
+npm run build
 pm2 restart "$SERVICE"
 
 echo ""
