@@ -9,10 +9,9 @@ import {
 } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { useAgentContext } from '../AgentContext'
-import { useAgent, ChatMessage } from '../hooks/useAgent'
+import { useConnection } from '../ConnectionContext'
 import {
   getConversations,
-  getMessages,
   deleteConversation,
   ConversationRow,
 } from '../db'
@@ -33,6 +32,7 @@ const formatDate = (ts: number): string => {
 export default function HistoryScreen() {
   const router = useRouter()
   const { activeAgent } = useAgentContext()
+  const { loadConversationRef } = useConnection()
   const [conversations, setConversations] = useState<
     ConversationRow[]
   >([])
@@ -46,10 +46,8 @@ export default function HistoryScreen() {
   )
 
   const handleLoad = (conv: ConversationRow) => {
-    router.push({
-      pathname: '/conversation',
-      params: { id: conv.id },
-    })
+    loadConversationRef.current?.(conv.id)
+    router.back()
   }
 
   const handleDelete = (conv: ConversationRow) => {

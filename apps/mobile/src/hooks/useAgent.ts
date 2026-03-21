@@ -57,8 +57,12 @@ export function useAgent(
   >(null)
   const [isThinking, setIsThinking] = useState(false)
   const nonceMRef = useRef<string>('')
-  // Ref keeps authState current inside event-handler callbacks without stale closure
+  // Refs keep values current inside event-handler callbacks without stale closures
   const authStateRef = useRef<AuthState>('pending')
+  const sessionIdRef = useRef(sessionId)
+  useEffect(() => {
+    sessionIdRef.current = sessionId
+  }, [sessionId])
 
   const handleDataChannelMessage = useCallback(
     (raw: string) => {
@@ -126,7 +130,7 @@ export function useAgent(
           sendRaw(
             JSON.stringify({
               type: 'sync',
-              sessionId: sessionId ?? 'default',
+              sessionId: sessionIdRef.current ?? 'default',
               afterTimestamp: lastTs,
             }),
           )
@@ -202,7 +206,7 @@ export function useAgent(
       sendRaw(
         JSON.stringify({
           content,
-          sessionId: sessionId ?? 'default',
+          sessionId: sessionIdRef.current ?? 'default',
         }),
       )
     },

@@ -28,6 +28,7 @@ import {
   createConversation,
   getMessages,
   saveMessage,
+  MessageRow,
 } from '../../db'
 
 export default function ChatScreen() {
@@ -62,6 +63,7 @@ export default function ChatScreen() {
     sendRawRef,
     onRagMessageRef,
     onSkillMessageRef,
+    loadConversationRef,
     setRtcState: setSharedRtcState,
     setAuthState: setSharedAuthState,
   } = useConnection()
@@ -161,6 +163,24 @@ export default function ChatScreen() {
       }
     }
   }, [messages])
+
+  // Register loadConversation so history screen can continue a past conversation
+  useEffect(() => {
+    loadConversationRef.current = (id: string) => {
+      const rows: MessageRow[] = getMessages(id)
+      conversationIdRef.current = id
+      savedMessageIdsRef.current = new Set(rows.map((r) => r.id))
+      setConversationId(id)
+      setInitialMessages(
+        rows.map((r) => ({
+          id: r.id,
+          role: r.role as 'user' | 'agent',
+          content: r.content,
+          timestamp: r.timestamp,
+        })),
+      )
+    }
+  }, [setInitialMessages])
 
   const handleNewChat = useCallback(() => {
     if (!activeAgent) return
