@@ -14,8 +14,8 @@ cd "$APP_DIR"
 export PATH="$HOME/.local/share/fnm:$PATH"
 eval "$(fnm env)"
 
-npm install
-npm run build
+pnpm install --ignore-workspace
+pnpm build
 pm2 restart "$SERVICE"
 
 echo ""

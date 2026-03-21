@@ -46,14 +46,14 @@ NODE_DIR="$(dirname "$NODE_BIN")"
 sudo ln -sf "$NODE_DIR/node" /usr/local/bin/node
 sudo ln -sf "$NODE_DIR/npm"  /usr/local/bin/npm
 
-npm install -g pm2 --silent
+npm install -g pnpm pm2 --silent
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 echo "[3/4] Installing dependencies and building..."
 cd "$APP_DIR"
-# Use npm directly — avoids resolving the full pnpm monorepo workspace
-npm install
-npm run build
+# --ignore-workspace treats the signal app as standalone, skipping workspace:* resolution
+pnpm install --ignore-workspace
+pnpm build
 
 # ── PM2 ───────────────────────────────────────────────────────────────────────
 echo "[4/4] Starting with PM2..."
