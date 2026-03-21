@@ -7,24 +7,36 @@
 A locally-run AI agent on your home machine, accessible from your phone via P2P WebRTC. No cloud. No subscription. Your data stays on your hardware.
 
 ```
-HOME MACHINE
-  ┌─────────────────────────────────────────────────────┐
-  │  [Ollama :11434] ◄──► [nekoni-agent :8000]          │
-  │  [ChromaDB embedded]  [aiortc WebRTC peer]          │
-  │  [SQLite memory]      [RAG + Tools + Skills]        │
-  │                                │                    │
-  │  [signal server :3000] ◄───────┘  (WebRTC relay)    │
-  └────────────────────┬────────────────────────────────┘
-                       │ Local Network / WiFi
-           ┌───────────┴──────────┐
-    [Mobile App RN]     [Web Dashboard React]
-    WebRTC DataChannel   traces + pairing UI
+                     INTERNET
+          ┌──────────────────────────────┐
+          │  signal.nekoni.dev (public)  │
+          │  WebRTC signaling only       │
+          │  (SDP offer/answer + ICE)    │
+          └───────┬──────────────┬───────┘
+                  │ outbound     │ outbound
+                  │ connect      │ connect
+                  │              │
+HOME MACHINE      │    PHONE     │
+  ┌───────────────┴──┐      ┌────┴────────────────────┐
+  │ nekoni-agent     │      │ Mobile App (RN + Expo)  │
+  │  :8000           │◄────►│                         │
+  │ Ollama :11434    │  P2P │ WebRTC DataChannel      │
+  │ ChromaDB         │ data │ (direct, no relay)      │
+  │ SQLite           │      └─────────────────────────┘
+  │ RAG+Tools+Skills │
+  └────────┬─────────┘
+           │ Local Network
+  ┌────────┴─────────────────┐
+  │ Web Dashboard (React)    │
+  │ nginx reverse proxy      │
+  │ traces + pairing UI      │
+  └──────────────────────────┘
 ```
 
 ## Features
 
 - **Fully local** — LLM inference via Ollama (llama3.2), embeddings via sentence-transformers, vector search via ChromaDB
-- **P2P transport** — WebRTC DataChannel over LAN, no TURN server needed
+- **P2P transport** — direct WebRTC DataChannel mobile ↔ agent, no relay; public signal server used only for SDP/ICE exchange
 - **Key-pair security** — Ed25519 identity keys, mutual auth handshake, no passwords
 - **RAG** — ingest documents (PDF, TXT, MD, CSV), query from chat; manage from dashboard or phone
 - **Skills** — named prompt templates that run through the agent; schedule them via cron from dashboard or phone
@@ -214,19 +226,19 @@ nekoni/
 
 Copy `.env.example` to `.env` and adjust as needed.
 
-| Variable             | Default                  | Description                               |
-| -------------------- | ------------------------ | ----------------------------------------- |
-| `SIGNAL_URL`         | `wss://signal.nekoni.dev` | Signal server WebSocket (self-host optional) |
-| `OLLAMA_MODEL`       | `llama3.2`               | Model to pull and use (pulled on startup) |
-| `DASHBOARD_USERNAME` | `admin`                  | Dashboard login username                  |
-| `DASHBOARD_PASSWORD` | `nekoni`                 | Dashboard login password                  |
-| `AGENT_URL`          | *(required)*             | LAN URL of this machine (`http://192.168.x.x:8000`) — embedded in QR code for mobile pairing |
-| `AGENT_NAME`         | `nekoni`                 | Agent display name                        |
-| `AGENT_PORT`         | `8000`                   | Agent HTTP port                           |
-| `OLLAMA_BASE_URL`    | `http://ollama:11434`    | Ollama endpoint                           |
-| `AGENT_KEYS_DIR`     | `/data/keys`             | Path for identity key storage             |
-| `CHROMA_PATH`        | `/data/chroma`           | ChromaDB data directory                   |
-| `SQLITE_PATH`        | `/data/sqlite/memory.db` | SQLite DB path                            |
+| Variable             | Default                   | Description                                                                                  |
+| -------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| `SIGNAL_URL`         | `wss://signal.nekoni.dev` | Signal server WebSocket (self-host optional)                                                 |
+| `OLLAMA_MODEL`       | `llama3.2`                | Model to pull and use (pulled on startup)                                                    |
+| `DASHBOARD_USERNAME` | `admin`                   | Dashboard login username                                                                     |
+| `DASHBOARD_PASSWORD` | `nekoni`                  | Dashboard login password                                                                     |
+| `AGENT_URL`          | _(required)_              | LAN URL of this machine (`http://192.168.x.x:8000`) — embedded in QR code for mobile pairing |
+| `AGENT_NAME`         | `nekoni`                  | Agent display name                                                                           |
+| `AGENT_PORT`         | `8000`                    | Agent HTTP port                                                                              |
+| `OLLAMA_BASE_URL`    | `http://ollama:11434`     | Ollama endpoint                                                                              |
+| `AGENT_KEYS_DIR`     | `/data/keys`              | Path for identity key storage                                                                |
+| `CHROMA_PATH`        | `/data/chroma`            | ChromaDB data directory                                                                      |
+| `SQLITE_PATH`        | `/data/sqlite/memory.db`  | SQLite DB path                                                                               |
 
 ---
 
@@ -271,7 +283,7 @@ curl -X POST http://localhost:8000/api/ingest \
 # → {"success": true, "documentId": "abc123", "chunks": 42, "filename": "document.pdf"}
 ```
 
-### Signal server (`localhost:3000`)
+### Signal server (`signal.nekoni.dev` / self-hosted `localhost:3000`)
 
 | Method | Path      | Description                                         |
 | ------ | --------- | --------------------------------------------------- |
