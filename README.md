@@ -27,7 +27,7 @@ graph TD
 
 ## Features
 
-- **Fully local** — LLM inference via Ollama (llama3.2), embeddings via sentence-transformers, vector search via ChromaDB
+- **Fully local** — LLM inference via Ollama (any model), embeddings via sentence-transformers, vector search via ChromaDB
 - **P2P transport** — direct WebRTC DataChannel mobile ↔ agent, no relay; public signal server used only for SDP/ICE exchange
 - **Key-pair security** — Ed25519 identity keys, mutual auth handshake, no passwords
 - **RAG** — ingest documents (PDF, TXT, MD, CSV), query from chat; manage from dashboard or phone
@@ -43,7 +43,7 @@ graph TD
 | Signaling  | Node.js 22 · TypeScript · ws · express                                   |
 | Dashboard  | React 19 · Vite · TypeScript · Radix UI Themes                           |
 | Mobile     | React Native · Expo · react-native-webrtc                                |
-| LLM        | Ollama (llama3.2)                                                        |
+| LLM        | Ollama (any model)                                                       |
 | Embeddings | sentence-transformers (all-MiniLM-L6-v2)                                 |
 | Vector DB  | ChromaDB (embedded, file-based)                                          |
 | State      | SQLite + aiosqlite                                                       |
@@ -88,7 +88,7 @@ docker compose up
 | Dashboard | http://localhost:8080  |
 | Ollama    | http://localhost:11434 |
 
-First startup pulls the model automatically (~2 GB for llama3.2). Set `OLLAMA_MODEL` in `.env` to use a different model.
+First startup pulls the model automatically. Set `OLLAMA_MODEL` in `.env` to any model available on Ollama (defaults to `llama3.2`).
 
 ### GPU (NVIDIA)
 
