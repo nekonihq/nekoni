@@ -61,7 +61,7 @@ HOME MACHINE
 ## Quick Start (Docker)
 
 ```bash
-git clone <repo> nekoni && cd nekoni
+git clone https://github.com/nekonihq/nekoni && cd nekoni
 
 # Copy env template and set SIGNAL_URL
 cp .env.example .env
