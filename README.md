@@ -329,15 +329,15 @@ sequenceDiagram
     participant M as Mobile
     participant A as Agent
 
-    M->>A: hello {pubKey, nonce_m}
-    Note over A: verify pubKey in approved list
-    A->>M: challenge {nonce_a, sig: sign(nonce_m, agentPrivKey)}
-    Note over M: verify sig vs QR-scanned agentPubKey
-    M->>A: response {sig: sign(nonce_a, mobilePrivKey)}
-    Note over A: verify sig vs approved pubKey
-    A->>M: ready
+    M->>A: Hello {pubKey, nonce_m}
+    Note over A: Verify pubKey in approved list
+    A->>M: Challenge {nonce_a, sig: sign(nonce_m, agentPrivKey)}
+    Note over M: Verify sig vs QR-scanned agentPubKey
+    M->>A: Response {sig: sign(nonce_a, mobilePrivKey)}
+    Note over A: Verify sig vs approved pubKey
+    A->>M: Ready
 
-    Note over M,A: normal message exchange
+    Note over M,A: Normal message exchange
 ```
 
 Connection is dropped immediately on any failure. No fallback.
