@@ -1,0 +1,20 @@
+{
+  "name": "nekoni",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/signal",
+    "apps/dashboard",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "dev:signal": "pnpm --filter @nekoni/signal dev",
+    "dev:dashboard": "pnpm --filter @nekoni/dashboard dev",
+    "build": "pnpm --filter @nekoni/shared-types build && pnpm --filter @nekoni/signal build && pnpm --filter @nekoni/dashboard build"
+  },
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  }
+}

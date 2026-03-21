@@ -1,0 +1,83 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: nekoni-ollama
+    volumes:
+      - ./data/ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: nekoni-ollama-pull
+    volumes:
+      - ./data/ollama:/root/.ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3.2}"
+    entrypoint: >
+      /bin/sh -c "
+        until ollama list > /dev/null 2>&1; do
+          echo 'Waiting for Ollama...'; sleep 2;
+        done;
+        echo \"Pulling model: $OLLAMA_MODEL\";
+        ollama pull $OLLAMA_MODEL
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  agent:
+    build:
+      context: ./apps/agent
+      dockerfile: Dockerfile
+    container_name: nekoni-agent
+    environment:
+      AGENT_HOST: "0.0.0.0"
+      AGENT_PORT: "8000"
+      AGENT_NAME: "${AGENT_NAME:-nekoni}"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3.2}"
+      SIGNAL_URL: "${SIGNAL_URL}"
+      AGENT_KEYS_DIR: "/data/keys"
+      CHROMA_PATH: "/data/chroma"
+      SQLITE_PATH: "/data/sqlite/memory.db"
+      DASHBOARD_USERNAME: "${DASHBOARD_USERNAME:-admin}"
+      DASHBOARD_PASSWORD: "${DASHBOARD_PASSWORD:-nekoni}"
+    volumes:
+      - ./data:/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  dashboard:
+    build:
+      context: ./apps/dashboard
+      dockerfile: Dockerfile
+    container_name: nekoni-dashboard
+    ports:
+      - "8080:80"
+    depends_on:
+      agent:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes: {}
