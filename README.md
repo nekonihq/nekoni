@@ -6,31 +6,23 @@
 
 A locally-run AI agent on your home machine, accessible from your phone via P2P WebRTC. No cloud. No subscription. Your data stays on your hardware.
 
-```
-                     INTERNET
-          ┌──────────────────────────────┐
-          │  signal.nekoni.dev (public)  │
-          │  WebRTC signaling only       │
-          │  (SDP offer/answer + ICE)    │
-          └───────┬──────────────┬───────┘
-                  │ outbound     │ outbound
-                  │ connect      │ connect
-                  │              │
-HOME MACHINE      │    PHONE     │
-  ┌───────────────┴──┐      ┌────┴────────────────────┐
-  │ nekoni-agent     │      │ Mobile App (RN + Expo)  │
-  │  :8000           │◄────►│                         │
-  │ Ollama :11434    │  P2P │ WebRTC DataChannel      │
-  │ ChromaDB         │ data │ (direct, no relay)      │
-  │ SQLite           │      └─────────────────────────┘
-  │ RAG+Tools+Skills │
-  └────────┬─────────┘
-           │ Local Network
-  ┌────────┴─────────────────┐
-  │ Web Dashboard (React)    │
-  │ nginx reverse proxy      │
-  │ traces + pairing UI      │
-  └──────────────────────────┘
+```mermaid
+graph TD
+    SIG["🌐 signal.nekoni.dev (public)\nWebRTC signaling only\nSDP offer/answer + ICE"]
+
+    subgraph PHONE ["📱 Phone"]
+        MOBILE["Mobile App\nReact Native + Expo"]
+    end
+
+    subgraph HOME ["🏠 Home Machine"]
+        AGENT["nekoni-agent :8000\nOllama · ChromaDB · SQLite\nRAG + Tools + Skills"]
+        DASH["Web Dashboard\npairing · traces · RAG · skills · monitor"]
+    end
+
+    MOBILE -- "Outbound connect" --> SIG
+    AGENT -- "Outbound connect" --> SIG
+    MOBILE <-- "WebRTC DataChannel" --> AGENT
+    DASH -- "Local Network\nHTTP + WebSocket" --> AGENT
 ```
 
 ## Features
@@ -301,17 +293,21 @@ Both agent and mobile have permanent Ed25519 keypairs.
 - **Agent key** — generated on first run, stored at `data/keys/agent_identity.pem`. The public key is embedded in the QR code.
 - **Mobile key** — generated on first app install, stored in iOS Keychain / Android Keystore via `expo-secure-store`. Never leaves the device.
 
-### Pairing (one-time per device)
+### Pairing (one-time per device, local network only)
 
-```
-Mobile                    Agent                    Dashboard
-  ├── scan QR code ────────────────────────────────────────►│
-  ├── POST /api/pair ──►│                                   │
-  │   {mobilePubKey,    │◄── WS: pairing_request ──────────►│
-  │    sig, ts}         │                        user sees  │
-  │                     │◄── POST /api/pair/approve ───────►│
-  │                     │    stores mobilePubKey            │
-  │◄── 200 OK ──────────┤                                   │
+```mermaid
+sequenceDiagram
+    participant M as Mobile
+    participant A as Agent
+    participant D as Dashboard
+
+    D-->>M: QR code (agentPubKey + signalUrl + roomId)
+    M->>A: POST /api/pair {mobilePubKey, sig, ts}
+    A->>D: WS pairing_request
+    Note over D: User sees approval prompt
+    D->>A: POST /api/pair/approve
+    Note over A: Stores mobilePubKey
+    A->>M: 200 OK
 ```
 
 ### Signaling Authentication
@@ -328,20 +324,20 @@ The signal server verifies signatures and enforces a ±5 minute timestamp window
 
 After the WebRTC connection opens, before any messages are accepted:
 
-```
-Mobile                                    Agent
-  ├── {type:"hello", pubKey, nonce_m} ──► │
-  │                                       │ verify pubKey in approved list
-  │◄── {type:"challenge",                 │
-  │     nonce_a,                          │
-  │     sig: sign(nonce_m, agentPrivKey)} │
-  │  verify sig vs QR-scanned pubKey      │
-  ├── {type:"response",                   │
-  │   sig: sign(nonce_a, mobilePrivKey)} ►│
-  │                                       │ verify sig vs approved pubKey
-  │◄── {type:"ready"} ───────────────────►│
-  │                                       │
-  │       normal message exchange         │
+```mermaid
+sequenceDiagram
+    participant M as Mobile
+    participant A as Agent
+
+    M->>A: hello {pubKey, nonce_m}
+    Note over A: verify pubKey in approved list
+    A->>M: challenge {nonce_a, sig: sign(nonce_m, agentPrivKey)}
+    Note over M: verify sig vs QR-scanned agentPubKey
+    M->>A: response {sig: sign(nonce_a, mobilePrivKey)}
+    Note over A: verify sig vs approved pubKey
+    A->>M: ready
+
+    Note over M,A: normal message exchange
 ```
 
 Connection is dropped immediately on any failure. No fallback.
