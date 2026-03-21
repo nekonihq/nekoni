@@ -293,9 +293,9 @@ Both agent and mobile have permanent Ed25519 keypairs.
 
 ```
 Mobile                    Agent                    Dashboard
-  ├── scan QR code ────────────────────────────────────-───►│
+  ├── scan QR code ────────────────────────────────────────►│
   ├── POST /api/pair ──►│                                   │
-  │   {mobilePubKey,    │◄── WS: pairing_request ────────-─►│
+  │   {mobilePubKey,    │◄── WS: pairing_request ──────────►│
   │    sig, ts}         │                        user sees  │
   │                     │◄── POST /api/pair/approve ───────►│
   │                     │    stores mobilePubKey            │
