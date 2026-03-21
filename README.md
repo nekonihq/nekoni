@@ -13,7 +13,7 @@ HOME MACHINE
   │  [ChromaDB embedded]  [aiortc WebRTC peer]          │
   │  [SQLite memory]      [RAG + Tools + Skills]        │
   │                                │                    │
-  │  [signal server :3000] ◄───────┘  (WebRTC relay)   │
+  │  [signal server :3000] ◄───────┘  (WebRTC relay)    │
   └────────────────────┬────────────────────────────────┘
                        │ Local Network / WiFi
            ┌───────────┴──────────┐
@@ -318,14 +318,14 @@ After the WebRTC connection opens, before any messages are accepted:
 
 ```
 Mobile                                    Agent
-  ├── {type:"hello", pubKey, nonce_m} ──►│
+  ├── {type:"hello", pubKey, nonce_m} ──► │
   │                                       │ verify pubKey in approved list
   │◄── {type:"challenge",                 │
   │     nonce_a,                          │
   │     sig: sign(nonce_m, agentPrivKey)} │
   │  verify sig vs QR-scanned pubKey      │
   ├── {type:"response",                   │
-  │    sig: sign(nonce_a, mobilePrivKey)} ►│
+  │   sig: sign(nonce_a, mobilePrivKey)} ►│
   │                                       │ verify sig vs approved pubKey
   │◄── {type:"ready"} ───────────────────►│
   │                                       │
