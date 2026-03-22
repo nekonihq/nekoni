@@ -102,11 +102,25 @@ class AgentLoop:
                 {"iteration": iteration, "messages_count": len(messages)},
             )
 
-            # Always buffer the full response before deciding what to do
+            # Stream tokens, forwarding them live unless it looks like a tool call.
+            # Tool calls always start with '{', so we buffer silently until the
+            # first non-whitespace character tells us which path we're on.
             buffer = ""
+            streaming_started = False
             try:
                 async for token in self.llm.chat_stream(messages):
                     buffer += token
+                    if not streaming_started:
+                        stripped = buffer.lstrip()
+                        if stripped and not stripped.startswith("{"):
+                            # Confirmed plain text — flush buffered content and
+                            # stream all subsequent tokens directly.
+                            streaming_started = True
+                            if on_token:
+                                await on_token(buffer)
+                        # Starts with '{' or still only whitespace — keep buffering
+                    elif on_token:
+                        await on_token(token)
             except Exception as e:
                 err_msg = str(e) or repr(e) or type(e).__name__
                 print(f"[loop] LLM stream error (iter={iteration}): {e}")
@@ -117,9 +131,10 @@ class AgentLoop:
             tool_call = self._parse_tool_call(response)
 
             if tool_call is None:
-                # Plain text response — replay as streaming chunks
                 context.add_message("assistant", response)
-                if on_token:
+                if not streaming_started and on_token:
+                    # Response started with '{' but turned out not to be a tool
+                    # call — send it now in chunks.
                     for i in range(0, len(response), CHUNK_SIZE):
                         await on_token(response[i : i + CHUNK_SIZE])
                 return response

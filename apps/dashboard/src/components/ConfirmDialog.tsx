@@ -27,7 +27,7 @@ export const ConfirmDialog = ({
           <Button variant="soft" color="gray" onClick={onCancel}>Cancel</Button>
         </AlertDialog.Cancel>
         <AlertDialog.Action>
-          <Button color="red" onClick={onConfirm}>{confirmLabel}</Button>
+          <Button color="red" variant="soft" onClick={onConfirm}>{confirmLabel}</Button>
         </AlertDialog.Action>
       </Flex>
     </AlertDialog.Content>

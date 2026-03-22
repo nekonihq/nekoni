@@ -26,6 +26,7 @@ import { useConnection } from '../../ConnectionContext'
 import { useAgentContext } from '../../AgentContext'
 import {
   createConversation,
+  getOrCreateConversation,
   getMessages,
   saveMessage,
   MessageRow,
@@ -145,7 +146,7 @@ export default function ChatScreen() {
   // Load or create a conversation when agent changes
   useEffect(() => {
     if (!activeAgent) return
-    const id = createConversation(activeAgent.roomId)
+    const id = getOrCreateConversation(activeAgent.roomId)
     conversationIdRef.current = id
     savedMessageIdsRef.current = new Set()
     setConversationId(id)

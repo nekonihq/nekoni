@@ -112,7 +112,7 @@ export const PairPage = () => {
                   >
                     Agent
                   </Text>
-                  <Text>{qrData.agentName}</Text>
+                  <Text size="2">{qrData.agentName}</Text>
                 </Box>
                 <Box>
                   <Text
@@ -127,7 +127,7 @@ export const PairPage = () => {
                   >
                     Room
                   </Text>
-                  <Code size="1">{qrData.roomId}</Code>
+                  <Code size="2">{qrData.roomId}</Code>
                 </Box>
                 <Box>
                   <Text
@@ -142,7 +142,7 @@ export const PairPage = () => {
                   >
                     Signal
                   </Text>
-                  <Code size="1">{qrData.signalUrl}</Code>
+                  <Code size="2">{qrData.signalUrl}</Code>
                 </Box>
                 <Box style={{ wordBreak: 'break-all' }}>
                   <Text
@@ -157,7 +157,7 @@ export const PairPage = () => {
                   >
                     Pub Key
                   </Text>
-                  <Code size="1">{qrData.agentPubKey}</Code>
+                  <Code size="2">{qrData.agentPubKey}</Code>
                 </Box>
                 <Box mt="2">
                   <Button

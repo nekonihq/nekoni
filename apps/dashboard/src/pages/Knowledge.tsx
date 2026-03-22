@@ -23,7 +23,9 @@ interface RagDocument {
 
 export const KnowledgePage = () => {
   const [docs, setDocs] = useState<RagDocument[]>([])
-  const [confirmDocId, setConfirmDocId] = useState<string | null>(null)
+  const [confirmDocId, setConfirmDocId] = useState<
+    string | null
+  >(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<
     string | null
@@ -96,16 +98,15 @@ export const KnowledgePage = () => {
           Knowledge Base
         </Text>
         <Flex align="center" gap="2">
-          <Badge color="gray">
+          <Badge size="3" color="gray">
             {docs.length} document
             {docs.length !== 1 ? 's' : ''}
           </Badge>
           <Button
-            variant="soft"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
           >
-            {uploading ? 'Uploading…' : '+ Upload'}
+            {uploading ? 'Uploading…' : 'Upload'}
           </Button>
           <input
             ref={inputRef}
@@ -218,7 +219,9 @@ export const KnowledgePage = () => {
                       size="1"
                       variant="soft"
                       color="red"
-                      onClick={() => setConfirmDocId(doc.doc_id)}
+                      onClick={() =>
+                        setConfirmDocId(doc.doc_id)
+                      }
                     >
                       Delete
                     </Button>
@@ -234,7 +237,10 @@ export const KnowledgePage = () => {
         open={!!confirmDocId}
         title="Delete Document"
         description="Remove this document from the knowledge base? This cannot be undone."
-        onConfirm={() => { handleDelete(confirmDocId!); setConfirmDocId(null) }}
+        onConfirm={() => {
+          handleDelete(confirmDocId!)
+          setConfirmDocId(null)
+        }}
         onCancel={() => setConfirmDocId(null)}
       />
     </Box>

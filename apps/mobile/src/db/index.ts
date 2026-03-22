@@ -98,6 +98,16 @@ export const saveMessage = (
   )
 }
 
+export const getOrCreateConversation = (agentId: string): string => {
+  const conversations = getConversations(agentId)
+  if (conversations.length > 0) {
+    const latest = conversations[0]
+    const msgs = getMessages(latest.id)
+    if (msgs.length === 0) return latest.id
+  }
+  return createConversation(agentId)
+}
+
 export const deleteConversation = (id: string): void => {
   const d = getDB()
   d.runSync('DELETE FROM messages WHERE conversation_id = ?', [id])
