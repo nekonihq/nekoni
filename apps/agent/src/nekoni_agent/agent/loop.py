@@ -9,6 +9,7 @@ import uuid
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from ..config import settings
 from ..llm.client import OllamaClient
 from ..llm.prompts import SYSTEM_PROMPT
 from ..rag.pipeline import RAGPipeline
@@ -16,11 +17,9 @@ from ..settings.models import get_setting
 from ..tools.registry import ToolRegistry
 from .context import SessionContext
 
-SendChunkFn = Callable[[str], None]
 OnTokenFn = Callable[[str], Awaitable[None]]
 TraceCb = Callable[[dict], Awaitable[None]]
 
-MAX_REACT_ITERATIONS = 8
 CHUNK_SIZE = 6
 
 
@@ -60,11 +59,10 @@ class AgentLoop:
         # RAG retrieval
         await self._emit(session_id, "rag_query", {"query": user_message})
         try:
-            from ..config import settings as _s
             raw_chunks = await self.rag.query(user_message)
             rag_chunks = [
                 c for c in raw_chunks
-                if c.get("score", 0) >= _s.rag_min_score
+                if c.get("score", 0) >= settings.rag_min_score
             ]
         except Exception as e:
             print(f"[loop] RAG query failed: {e}")
@@ -94,7 +92,7 @@ class AgentLoop:
 
         context.add_message("user", user_message)
 
-        for iteration in range(MAX_REACT_ITERATIONS):
+        for iteration in range(settings.max_react_iterations):
             messages = context.to_ollama_messages()
             await self._emit(
                 session_id,

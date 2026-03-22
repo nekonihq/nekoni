@@ -58,7 +58,6 @@ def _resolve_signal_url() -> str:
     )
 
 
-
 def get_rag() -> RAGPipeline:
     from ..main import rag_pipeline
 
@@ -137,15 +136,7 @@ async def pair_request(req: PairingRequest):
     payload = {"mobilePubKey": req.mobilePubKey, "ts": req.ts}
     if req.deviceName:
         payload["deviceName"] = req.deviceName
-    import json as _json
-
-    verified_str = _json.dumps(payload, separators=(",", ":"), sort_keys=True)
-    print(f"[pair] verifying payload str : {verified_str}")
-    print(f"[pair] verifying payload bytes: {verified_str.encode().hex()}")
-    print(f"[pair] sig                    : {req.sig}")
-    print(f"[pair] pub key                : {req.mobilePubKey}")
     valid = verify_message_sig({**payload, "sig": req.sig}, req.mobilePubKey)
-    print(f"[pair] valid                  : {valid}")
     if not valid:
         raise HTTPException(400, "Invalid signature")
 

@@ -31,9 +31,7 @@ from .webrtc.peer import AgentPeer
 def _load_or_create_room_id() -> str:
     import os
 
-    from .config import settings as _s
-
-    path = os.path.join(_s.agent_keys_dir, "room_id.txt")
+    path = os.path.join(settings.agent_keys_dir, "room_id.txt")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
         with open(path) as f:
