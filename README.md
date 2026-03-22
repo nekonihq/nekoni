@@ -55,31 +55,23 @@ graph TD
 ## Prerequisites
 
 - Docker + Docker Compose
-- Node.js 22+ and pnpm 9+ (for local dev)
-- [pnpm](https://pnpm.io/installation) (for local dev)
-- Python 3.12+ and [uv](https://github.com/astral-sh/uv) (for local agent dev)
+- Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- `make` (macOS/Linux: built-in; Windows: via [choco](https://chocolatey.org/) or WSL)
 - ~4 GB disk for Ollama model
 
 ---
 
-## Quick Start (Docker)
+## Quick Start
 
 ```bash
 git clone https://github.com/nekonihq/nekoni && cd nekoni
 
-# Copy env template
+# Copy env template and adjust as needed (DASHBOARD_PASSWORD at minimum)
 cp .env.example .env
-# Set AGENT_URL to your machine's LAN IP (required for mobile pairing):
-#   macOS:   ipconfig getifaddr en0
-#   Linux:   hostname -I | awk '{print $1}'
-#   Windows: ipconfig | findstr "IPv4"
-# Also set DASHBOARD_PASSWORD
 
-# Create data dirs (run once)
-./scripts/setup.sh
-
-# Start everything (model is pulled automatically on first run)
-docker compose up
+# Start everything — Ollama + dashboard in Docker, agent on host
+# Model is pulled automatically on first run
+make up
 ```
 
 | Service   | URL                    |
@@ -90,43 +82,27 @@ docker compose up
 
 First startup pulls the model automatically. Set `OLLAMA_MODEL` in `.env` to any model available on Ollama (defaults to `llama3.2`).
 
-### GPU (NVIDIA)
+### Stop
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+make down
 ```
-
-Requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
 
 ---
 
-## Local Development
+## Development
 
-Run only Ollama in Docker, everything else locally with hot-reload:
+The agent runs on the host (not in Docker) so WebRTC works correctly on all platforms — `make up` handles this automatically.
+
+For dashboard hot-reload during development:
 
 ```bash
-# Start Ollama (pulls model automatically)
-docker compose -f docker-compose.dev.yml up -d
+# Terminal 1 — Ollama + agent
+make up
 
-# Install JS dependencies
+# Terminal 2 — dashboard dev server (port 5173)
 pnpm install
-
-# Build shared types first
-pnpm --filter @nekoni/shared-types build
-
-# Start agent (port 8000)
-cd apps/agent
-uv sync
-uv run uvicorn nekoni_agent.main:app --reload --port 8000
-
-# Start dashboard (port 5173, in another terminal)
 pnpm dev:dashboard
-```
-
-Or use the convenience script:
-
-```bash
-./scripts/dev.sh
 ```
 
 ---
@@ -200,16 +176,13 @@ nekoni/
 │               ├── useAgent.ts      # DataChannel auth + message state
 │               ├── useRAG.ts        # RAG document management over WebRTC
 │               └── useSkills.ts     # Skill + cron management over WebRTC
-├── data/                      # Docker volume mounts (gitignored)
+├── data/                      # Gitignored runtime data
 │   ├── keys/                  # agent_identity.pem + approved_devices.json
 │   ├── chroma/                # ChromaDB vector store
 │   ├── sqlite/                # Episodic memory DB
 │   └── ollama/                # Ollama model weights
-├── docker-compose.yml
-├── docker-compose.dev.yml
-└── scripts/
-    ├── setup.sh               # Pull model, create data dirs
-    └── dev.sh                 # Start all services locally
+├── docker-compose.yml         # Ollama + dashboard
+├── Makefile                   # make up / make down
 ```
 
 ---
@@ -218,19 +191,18 @@ nekoni/
 
 Copy `.env.example` to `.env` and adjust as needed.
 
-| Variable             | Default                   | Description                                                                                  |
-| -------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
-| `SIGNAL_URL`         | `wss://signal.nekoni.dev` | Signal server WebSocket (self-host optional)                                                 |
-| `OLLAMA_MODEL`       | `llama3.2`                | Model to pull and use (pulled on startup)                                                    |
-| `DASHBOARD_USERNAME` | `admin`                   | Dashboard login username                                                                     |
-| `DASHBOARD_PASSWORD` | `nekoni`                  | Dashboard login password                                                                     |
-| `AGENT_URL`          | _(required)_              | LAN URL of this machine (`http://192.168.x.x:8000`) — embedded in QR code for mobile pairing |
-| `AGENT_NAME`         | `nekoni`                  | Agent display name                                                                           |
-| `AGENT_PORT`         | `8000`                    | Agent HTTP port                                                                              |
-| `OLLAMA_BASE_URL`    | `http://ollama:11434`     | Ollama endpoint                                                                              |
-| `AGENT_KEYS_DIR`     | `/data/keys`              | Path for identity key storage                                                                |
-| `CHROMA_PATH`        | `/data/chroma`            | ChromaDB data directory                                                                      |
-| `SQLITE_PATH`        | `/data/sqlite/memory.db`  | SQLite DB path                                                                               |
+| Variable             | Default                    | Description                                          |
+| -------------------- | -------------------------- | ---------------------------------------------------- |
+| `SIGNAL_URL`         | `wss://signal.nekoni.dev`  | Signal server WebSocket (self-host optional)         |
+| `OLLAMA_MODEL`       | `llama3.2`                 | Model to pull and use (pulled on startup)            |
+| `OLLAMA_BASE_URL`    | `http://localhost:11434`   | Ollama endpoint                                      |
+| `DASHBOARD_USERNAME` | `admin`                    | Dashboard login username                             |
+| `DASHBOARD_PASSWORD` | `nekoni`                   | Dashboard login password — **change this**           |
+| `AGENT_NAME`         | `nekoni`                   | Agent display name                                   |
+| `AGENT_PORT`         | `8000`                     | Agent HTTP port                                      |
+| `AGENT_KEYS_DIR`     | `./data/keys`              | Path for identity key storage                        |
+| `CHROMA_PATH`        | `./data/chroma`            | ChromaDB data directory                              |
+| `SQLITE_PATH`        | `./data/sqlite/memory.db`  | SQLite DB path                                       |
 
 ---
 

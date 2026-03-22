@@ -58,13 +58,6 @@ def _resolve_signal_url() -> str:
     )
 
 
-def _resolve_agent_url() -> str:
-    """Return the agent's HTTP URL reachable by the mobile app."""
-    if settings.agent_url:
-        return settings.agent_url.rstrip("/")
-    lan_ip = _get_lan_ip() or "localhost"
-    return f"http://{lan_ip}:{settings.agent_port}"
-
 
 def get_rag() -> RAGPipeline:
     from ..main import rag_pipeline
@@ -92,7 +85,7 @@ async def get_qr():
     return {
         "agentPubKey": pub_key,
         "signalUrl": _resolve_signal_url(),
-        "agentUrl": _resolve_agent_url(),
+        "agentUrl": f"http://{_get_lan_ip() or 'localhost'}:{settings.agent_port}",
         "roomId": room_id,
         "agentName": settings.agent_name,
     }
@@ -111,7 +104,7 @@ async def get_qr_image():
         {
             "agentPubKey": pub_key,
             "signalUrl": _resolve_signal_url(),
-            "agentUrl": _resolve_agent_url(),
+            "agentUrl": f"http://{_get_lan_ip() or 'localhost'}:{settings.agent_port}",
             "roomId": room_id,
             "agentName": settings.agent_name,
         }

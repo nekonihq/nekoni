@@ -9,7 +9,7 @@ import uuid
 from typing import Awaitable, Callable
 
 import aiohttp
-from aiortc import RTCPeerConnection, RTCSessionDescription
+from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection, RTCSessionDescription
 from aiortc.sdp import candidate_from_sdp, candidate_to_sdp
 
 from ..config import settings
@@ -127,7 +127,11 @@ class AgentPeer:
                 await self._pc.close()
             except Exception as e:
                 print(f"[peer] Error closing previous PC: {e}")
-        self._pc = RTCPeerConnection()
+        self._pc = RTCPeerConnection(
+            configuration=RTCConfiguration(
+                iceServers=[RTCIceServer(urls=["stun:stun.l.google.com:19302"])]
+            )
+        )
 
         @self._pc.on("datachannel")
         def on_datachannel(channel):
