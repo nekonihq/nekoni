@@ -27,7 +27,8 @@
         "CAMERA",
         "INTERNET",
         "ACCESS_NETWORK_STATE",
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -40,6 +41,12 @@
         }
       ],
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fd1d5527-2948-4374-bf6f-2a9e6bd83b96"
+      }
+    }
   }
 }
