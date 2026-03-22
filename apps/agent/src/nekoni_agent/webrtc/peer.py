@@ -10,6 +10,7 @@ from typing import Awaitable, Callable
 
 import aiohttp
 from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection, RTCSessionDescription
+from aiortc.exceptions import InvalidStateError as RTCInvalidStateError
 from aiortc.sdp import candidate_from_sdp, candidate_to_sdp
 
 from ..config import settings
@@ -45,6 +46,15 @@ class AgentPeer:
         """Connect to signaling server and join room."""
 
         self._room_id = room_id
+
+        # Suppress unhandled task exceptions from aiortc when a PC is closed
+        # mid-negotiation (expected race when mobile reconnects quickly).
+        _default = asyncio.get_event_loop().get_exception_handler()
+        def _exc_handler(loop: asyncio.AbstractEventLoop, ctx: dict) -> None:
+            if isinstance(ctx.get("exception"), RTCInvalidStateError):
+                return
+            (_default or loop.default_exception_handler)(loop, ctx)
+        asyncio.get_event_loop().set_exception_handler(_exc_handler)
 
         signal_url = settings.signal_url
         session = aiohttp.ClientSession()

@@ -41,7 +41,7 @@ class RAGQueryTool(Tool):
     async def execute(self, query: str, top_k: int = 5) -> list[dict]:
         from ...config import settings
 
-        top_k = int(top_k)  # LLM occasionally sends a string
+        top_k = min(int(top_k), settings.rag_top_k)  # cap at configured max
         chunks = await self._rag.query(query, top_k=top_k)
         return [
             {

@@ -54,10 +54,11 @@ graph TD
 
 ## Prerequisites
 
-- Docker + Docker Compose
-- Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - `make` (macOS/Linux: built-in; Windows: via [choco](https://chocolatey.org/) or WSL)
 - ~4 GB disk for Ollama model
+
+Everything else (Ollama, uv, Python, pnpm) is installed by `make install`.
 
 ---
 
@@ -69,8 +70,13 @@ git clone https://github.com/nekonihq/nekoni && cd nekoni
 # Copy env template and adjust as needed (DASHBOARD_PASSWORD at minimum)
 cp .env.example .env
 
-# Start everything — Ollama + dashboard in Docker, agent on host
-# Model is pulled automatically on first run
+# Install prerequisites (Ollama, uv, pnpm)
+make install
+
+# Pull the AI model (once)
+make pull
+
+# Start everything — dashboard in Docker, agent on host
 make up
 ```
 
@@ -80,7 +86,7 @@ make up
 | Dashboard | http://localhost:8080  |
 | Ollama    | http://localhost:11434 |
 
-First startup pulls the model automatically. Set `OLLAMA_MODEL` in `.env` to any model available on Ollama (defaults to `llama3.2`).
+To change the model, update `OLLAMA_MODEL` in `.env` and run `make pull` again.
 
 ### Stop
 
@@ -194,7 +200,7 @@ Copy `.env.example` to `.env` and adjust as needed.
 | Variable             | Default                    | Description                                          |
 | -------------------- | -------------------------- | ---------------------------------------------------- |
 | `SIGNAL_URL`         | `wss://signal.nekoni.dev`  | Signal server WebSocket (self-host optional)         |
-| `OLLAMA_MODEL`       | `llama3.2`                 | Model to pull and use (pulled on startup)            |
+| `OLLAMA_MODEL`       | `llama3.2`                 | Model to use — run `make pull` after changing        |
 | `OLLAMA_BASE_URL`    | `http://localhost:11434`   | Ollama endpoint                                      |
 | `DASHBOARD_USERNAME` | `admin`                    | Dashboard login username                             |
 | `DASHBOARD_PASSWORD` | `nekoni`                   | Dashboard login password — **change this**           |

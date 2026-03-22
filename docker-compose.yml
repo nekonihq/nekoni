@@ -1,40 +1,4 @@
 services:
-  ollama:
-    image: ollama/ollama:latest
-    container_name: nekoni-ollama
-    volumes:
-      - ./data/ollama:/root/.ollama
-    ports:
-      - "11434:11434"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
-  ollama-pull:
-    image: ollama/ollama:latest
-    container_name: nekoni-ollama-pull
-    volumes:
-      - ./data/ollama:/root/.ollama
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3.2}"
-    entrypoint: >
-      /bin/sh -c "
-        until ollama list > /dev/null 2>&1; do
-          echo 'Waiting for Ollama...'; sleep 2;
-        done;
-        echo \"Pulling model: $OLLAMA_MODEL\";
-        ollama pull $OLLAMA_MODEL
-      "
-    depends_on:
-      ollama:
-        condition: service_healthy
-    restart: "no"
-
   dashboard:
     build:
       context: .
@@ -45,5 +9,3 @@ services:
     ports:
       - "8080:80"
     restart: unless-stopped
-
-volumes: {}
