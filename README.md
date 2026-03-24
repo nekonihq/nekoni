@@ -122,6 +122,8 @@ pnpm dev:dashboard
 
 A browser-based PWA with full feature parity to the mobile app: chat, RAG knowledge base, skills & cron, settings, and conversation history. Connects to the agent via WebRTC over the HTTPS endpoint so the browser's mixed-content restrictions are satisfied.
 
+**[app.nekoni.dev](https://app.nekoni.dev)** — hosted build (pair with your local agent)
+
 ```bash
 cd apps/web
 pnpm install
