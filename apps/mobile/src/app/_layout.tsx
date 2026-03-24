@@ -23,9 +23,16 @@ export default function RootLayout() {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="onboarding"
+            options={{
+              title: 'Get Started',
+              headerBackTitle: 'Back',
+            }}
+          />
+          <Stack.Screen
             name="pair"
             options={{
-              title: 'Pair Device',
+              title: 'Pair Agent',
               headerBackTitle: 'Back',
             }}
           />

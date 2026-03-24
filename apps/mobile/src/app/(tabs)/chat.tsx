@@ -56,7 +56,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!agentsLoaded) return
-    if (!activeAgent) router.push('/pair')
+    if (!activeAgent) router.push('/onboarding')
   }, [agentsLoaded, activeAgent])
 
   const {

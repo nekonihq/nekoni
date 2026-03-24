@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native'
 import {
   CameraView,
@@ -163,17 +164,20 @@ export default function PairScreen() {
     )
   if (!permission) return <View style={styles.center} />
   if (!permission.granted) {
+    const denied = permission.status === 'denied'
     return (
       <View style={styles.center}>
         <Text style={styles.text}>
-          Camera permission required to scan QR code
+          {denied
+            ? 'Camera access was denied. Enable it in Settings to scan the QR code shown on your agent\'s dashboard — that\'s how your phone and home machine recognize each other.'
+            : 'To pair your phone with your home agent, you\'ll scan a QR code displayed on the agent\'s dashboard. Camera access is needed for that.'}
         </Text>
         <TouchableOpacity
           style={styles.btn}
-          onPress={requestPermission}
+          onPress={denied ? Linking.openSettings : requestPermission}
         >
           <Text style={styles.btnText}>
-            Grant Permission
+            {denied ? 'Open Settings' : 'Continue'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -268,6 +272,8 @@ const styles = StyleSheet.create({
   },
   text: {
     color: colors.textHigh,
+    fontSize: 17,
+    lineHeight: 24,
     marginBottom: 16,
     textAlign: 'center',
   },

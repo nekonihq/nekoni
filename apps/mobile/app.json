@@ -10,6 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.nekoni.app",
+      "buildNumber": "2",
       "appleTeamId": "5937UUXFCY",
       "infoPlist": {
         "NSAppTransportSecurity": {
