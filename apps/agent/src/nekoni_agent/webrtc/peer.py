@@ -36,7 +36,7 @@ class AgentPeer:
         self.on_skill = on_skill
         self._private_key, self.pub_key = load_or_create_identity(keys_dir)
         self.client_id = f"agent-{str(uuid.uuid4())[:8]}"
-        self._pc: RTCPeerConnection | None = None
+        self._pcs: dict[str, RTCPeerConnection] = {}
         self._ws = None
         self._channel = None
         self._room_id: str | None = None
@@ -107,7 +107,9 @@ class AgentPeer:
             await self._handle_offer(msg)
 
         elif msg_type == "ice":
-            if self._pc:
+            from_client = msg.get("from", "")
+            pc = self._pcs.get(from_client)
+            if pc:
                 candidate_data = msg.get("candidate", {})
                 sdp_str = candidate_data.get("candidate", "")
                 if sdp_str:
@@ -121,7 +123,7 @@ class AgentPeer:
                         candidate = candidate_from_sdp(sdp_line)
                         candidate.sdpMid = candidate_data.get("sdpMid")
                         candidate.sdpMLineIndex = candidate_data.get("sdpMLineIndex")
-                        await self._pc.addIceCandidate(candidate)
+                        await pc.addIceCandidate(candidate)
                     except Exception as e:
                         print(f"[peer] ICE candidate error: {e}")
 
@@ -131,19 +133,28 @@ class AgentPeer:
 
         from .channel import DataChannelHandler
 
-        # Close previous peer connection before creating a new one
-        if self._pc is not None:
+        # Close existing PC for this specific client (reconnect case)
+        existing = self._pcs.get(from_client)
+        if existing is not None:
             try:
-                await self._pc.close()
+                await existing.close()
             except Exception as e:
-                print(f"[peer] Error closing previous PC: {e}")
-        self._pc = RTCPeerConnection(
+                print(f"[peer] Error closing previous PC for {from_client}: {e}")
+
+        pc = RTCPeerConnection(
             configuration=RTCConfiguration(
                 iceServers=[RTCIceServer(urls=["stun:stun.l.google.com:19302"])]
             )
         )
+        self._pcs[from_client] = pc
 
-        @self._pc.on("datachannel")
+        @pc.on("connectionstatechange")
+        async def on_connectionstatechange():
+            if pc.connectionState in ("closed", "failed"):
+                self._pcs.pop(from_client, None)
+                print(f"[peer] PC removed for {from_client} ({pc.connectionState})")
+
+        @pc.on("datachannel")
         def on_datachannel(channel):
             handler = DataChannelHandler(
                 channel=channel,
@@ -156,7 +167,7 @@ class AgentPeer:
             )
             handler.setup()
 
-        @self._pc.on("icecandidate")
+        @pc.on("icecandidate")
         async def on_icecandidate(candidate):
             if candidate and self._ws:
                 ice_msg = {
@@ -178,14 +189,14 @@ class AgentPeer:
 
         sdp = msg.get("sdp", "")
         offer = RTCSessionDescription(sdp=sdp, type="offer")
-        await self._pc.setRemoteDescription(offer)
+        await pc.setRemoteDescription(offer)
 
-        answer = await self._pc.createAnswer()
-        await self._pc.setLocalDescription(answer)
+        answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
 
         answer_msg = {
             "type": "answer",
-            "sdp": self._pc.localDescription.sdp,
+            "sdp": pc.localDescription.sdp,
             "from": self.client_id,
             "to": from_client,
             "ts": int(time.time() * 1000),

@@ -53,11 +53,13 @@ pull:
 
 up:
 	docker compose up -d
-	uv run --project apps/agent --env-file .env uvicorn nekoni_agent.main:app --host 0.0.0.0 --port 8000
+	uv run --project apps/agent python scripts/gen_cert.py data/certs
+	uv run --project apps/agent --env-file .env python scripts/run_agent.py
 
 build_up:
 	docker compose up -d --build
-	uv run --project apps/agent --env-file .env uvicorn nekoni_agent.main:app --host 0.0.0.0 --port 8000
+	uv run --project apps/agent python scripts/gen_cert.py data/certs
+	uv run --project apps/agent --env-file .env python scripts/run_agent.py
 
 down:
 	docker compose down

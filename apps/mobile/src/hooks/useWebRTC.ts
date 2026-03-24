@@ -247,6 +247,9 @@ export function useWebRTC({
         try {
 
         if (msg.type === 'peer_joined') {
+          // Ignore peer_joined from other mobile devices in the room
+          if (msg.pubKey !== agentInfo.agentPubKey) return
+
           agentClientId = msg.clientId
 
           if (offerSent) {

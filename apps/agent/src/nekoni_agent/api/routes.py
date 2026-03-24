@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from ..config import settings
@@ -70,6 +71,38 @@ def get_trace_manager():
     return trace_manager
 
 
+@public_router.get("/", response_class=HTMLResponse)
+async def welcome_page():
+    agent_name = settings.agent_name
+    return HTMLResponse(content=f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nekoni Agent</title>
+  <style>
+    *{{margin:0;padding:0;box-sizing:border-box}}
+    body{{background:#111113;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}}
+    .badge{{width:72px;height:72px;background:#30a46c;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:36px}}
+    h1{{font-size:26px;font-weight:700;margin-bottom:8px}}
+    .name{{color:#30a46c}}
+    p{{color:#9ba1a6;font-size:15px;line-height:1.6;margin-bottom:12px}}
+    .hint{{margin-top:32px;padding:16px 20px;background:#1c1c1f;border:1px solid #2e2e32;border-radius:12px;color:#c9cfd4;font-size:14px;line-height:1.5}}
+    .hint strong{{color:#fff}}
+  </style>
+</head>
+<body>
+  <div>
+    <div class="badge">✓</div>
+    <h1>Agent is running</h1>
+    <p><span class="name">{agent_name}</span> is online and ready.</p>
+    <p>Certificate trusted. You can now return to the app.</p>
+    <div class="hint">← Go back to the app and tap <strong>Continue</strong> to finish pairing.</div>
+  </div>
+</body>
+</html>""")
+
+
 @public_router.get("/health")
 async def health():
     return {"status": "ok", "ts": int(time.time() * 1000), "agent": settings.agent_name}
@@ -81,10 +114,12 @@ async def get_qr():
     _, pub_key = load_or_create_identity(settings.keys_dir)
     from ..main import room_id
 
+    lan_ip = _get_lan_ip() or "localhost"
     return {
         "agentPubKey": pub_key,
         "signalUrl": _resolve_signal_url(),
-        "agentUrl": f"http://{_get_lan_ip() or 'localhost'}:{settings.agent_port}",
+        "agentUrl": f"http://{lan_ip}:{settings.agent_port}",
+        "agentUrlHttps": f"https://{lan_ip}:{settings.agent_port_https}",
         "roomId": room_id,
         "agentName": settings.agent_name,
     }
@@ -99,11 +134,13 @@ async def get_qr_image():
     _, pub_key = load_or_create_identity(settings.keys_dir)
     from ..main import room_id
 
+    lan_ip = _get_lan_ip() or "localhost"
     payload = json.dumps(
         {
             "agentPubKey": pub_key,
             "signalUrl": _resolve_signal_url(),
-            "agentUrl": f"http://{_get_lan_ip() or 'localhost'}:{settings.agent_port}",
+            "agentUrl": f"http://{lan_ip}:{settings.agent_port}",
+            "agentUrlHttps": f"https://{lan_ip}:{settings.agent_port_https}",
             "roomId": room_id,
             "agentName": settings.agent_name,
         }

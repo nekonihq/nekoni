@@ -10,18 +10,21 @@ A locally-run AI agent on your home machine, accessible from your phone via P2P 
 graph TD
     SIG["🌐 signal.nekoni.dev (public)\nWebRTC signaling only\nSDP offer/answer + ICE"]
 
-    subgraph PHONE ["📱 Phone"]
+    subgraph CLIENTS ["📱 Clients"]
         MOBILE["Mobile App\nReact Native + Expo"]
+        WEB["Web App\nReact PWA (Vite)"]
     end
 
     subgraph HOME ["🏠 Home Machine"]
-        AGENT["nekoni-agent :8000\nOllama · ChromaDB · SQLite\nRAG + Tools + Skills"]
+        AGENT["nekoni-agent :8000 / :8443\nOllama · ChromaDB · SQLite\nRAG + Tools + Skills"]
         DASH["Web Dashboard\npairing · traces · RAG · skills · monitor"]
     end
 
     MOBILE -- "Outbound connect" --> SIG
+    WEB -- "Outbound connect" --> SIG
     AGENT -- "Outbound connect" --> SIG
-    MOBILE <-- "WebRTC DataChannel" --> AGENT
+    MOBILE <-- "WebRTC DataChannel (HTTP :8000)" --> AGENT
+    WEB <-- "WebRTC DataChannel (HTTPS :8443)" --> AGENT
     DASH -- "Local Network\nHTTP + WebSocket" --> AGENT
 ```
 
@@ -43,10 +46,11 @@ graph TD
 | Signaling  | Node.js 22 · TypeScript · ws · express                                   |
 | Dashboard  | React 19 · Vite · TypeScript · Radix UI Themes                           |
 | Mobile     | React Native · Expo · react-native-webrtc                                |
+| Web App    | React 19 · Vite · TypeScript · PWA · qr-scanner                         |
 | LLM        | Ollama (any model)                                                       |
 | Embeddings | sentence-transformers (all-MiniLM-L6-v2)                                 |
 | Vector DB  | ChromaDB (embedded, file-based)                                          |
-| State      | SQLite + aiosqlite                                                       |
+| State      | SQLite + aiosqlite · IndexedDB (web app)                                 |
 | Crypto     | Ed25519 — cryptography (Python) · @noble/ed25519 (Node) · tweetnacl (RN) |
 | Monorepo   | pnpm workspaces + uv                                                     |
 
@@ -80,11 +84,12 @@ make pull
 make up
 ```
 
-| Service   | URL                    |
-| --------- | ---------------------- |
-| Agent API | http://localhost:8000  |
-| Dashboard | http://localhost:8080  |
-| Ollama    | http://localhost:11434 |
+| Service        | URL                     |
+| -------------- | ----------------------- |
+| Agent API      | http://localhost:8000   |
+| Agent API TLS  | https://localhost:8443  |
+| Dashboard      | http://localhost:8080   |
+| Ollama         | http://localhost:11434  |
 
 To change the model, update `OLLAMA_MODEL` in `.env` and run `make pull` again.
 
@@ -110,6 +115,29 @@ make up
 pnpm install
 pnpm dev:dashboard
 ```
+
+---
+
+## Web App
+
+A browser-based PWA with full feature parity to the mobile app: chat, RAG knowledge base, skills & cron, settings, and conversation history. Connects to the agent via WebRTC over the HTTPS endpoint so the browser's mixed-content restrictions are satisfied.
+
+```bash
+cd apps/web
+pnpm install
+pnpm dev            # dev server at https://localhost:5173 (self-signed cert)
+```
+
+**First launch flow:**
+
+1. Start the agent with `make up` — this also generates a self-signed TLS cert and starts the HTTPS proxy on `:8443`
+2. Open the web app and tap **Pair**
+3. Scan the QR code displayed on the dashboard → **Pair** page
+4. The app shows a **Trust the agent** step — tap **Open Agent in Browser**, accept the self-signed certificate warning, then return to the app
+5. Tap **Continue** — pairing request is sent; approve it on the dashboard
+6. App navigates to chat and connects automatically
+
+> The cert-trust step is required once per browser because the agent uses a locally generated self-signed certificate. After accepting it the browser remembers the exception.
 
 ---
 
@@ -168,20 +196,41 @@ nekoni/
 │   │       ├── pages/Knowledge.tsx   # RAG document management
 │   │       ├── pages/Skills.tsx      # Skills list + cron jobs
 │   │       └── pages/SkillEditor.tsx # Markdown skill prompt editor
-│   └── mobile/                # React Native / Expo
+│   ├── mobile/                # React Native / Expo
+│   │   └── src/
+│   │       ├── app/(tabs)/chat.tsx       # Chat UI
+│   │       ├── app/(tabs)/knowledge.tsx  # RAG management from phone
+│   │       ├── app/(tabs)/skills.tsx     # Skills + cron from phone
+│   │       ├── app/(tabs)/settings.tsx   # Identity + paired agents
+│   │       ├── app/pair.tsx              # QR scanner + pairing flow
+│   │       ├── ConnectionContext.tsx     # Shared WebRTC + auth state
+│   │       └── hooks/
+│   │           ├── useIdentity.ts   # Ed25519 keygen + secure storage
+│   │           ├── useWebRTC.ts     # Signed signaling + peer connection
+│   │           ├── useAgent.ts      # DataChannel auth + message state
+│   │           ├── useRAG.ts        # RAG document management over WebRTC
+│   │           └── useSkills.ts     # Skill + cron management over WebRTC
+│   └── web/                   # React PWA (Vite)
 │       └── src/
-│           ├── app/(tabs)/chat.tsx       # Chat UI
-│           ├── app/(tabs)/knowledge.tsx  # RAG management from phone
-│           ├── app/(tabs)/skills.tsx     # Skills + cron from phone
-│           ├── app/(tabs)/settings.tsx   # Identity + paired agents
-│           ├── app/pair.tsx              # QR scanner + pairing flow
-│           ├── ConnectionContext.tsx     # Shared WebRTC + auth state
-│           └── hooks/
-│               ├── useIdentity.ts   # Ed25519 keygen + secure storage
-│               ├── useWebRTC.ts     # Signed signaling + peer connection
-│               ├── useAgent.ts      # DataChannel auth + message state
-│               ├── useRAG.ts        # RAG document management over WebRTC
-│               └── useSkills.ts     # Skill + cron management over WebRTC
+│           ├── contexts/
+│           │   ├── AgentContext.tsx      # Paired agents list (IndexedDB)
+│           │   └── ConnectionContext.tsx # Global WebRTC + auth state
+│           ├── pages/
+│           │   ├── ChatPage.tsx          # Chat UI + history/new chat
+│           │   ├── HistoryPage.tsx       # Conversation list
+│           │   ├── KnowledgePage.tsx     # RAG document management
+│           │   ├── SkillsPage.tsx        # Skills + cron scheduling
+│           │   ├── SettingsPage.tsx      # Identity + paired agents
+│           │   └── PairPage.tsx          # QR scan + cert trust + pairing
+│           ├── hooks/
+│           │   ├── useIdentity.ts        # Ed25519 keygen (localStorage)
+│           │   ├── useWebRTC.ts          # Signed signaling + peer connection
+│           │   ├── useAgent.ts           # DataChannel auth + message state
+│           │   ├── useRAG.ts             # RAG over WebRTC
+│           │   └── useSkills.ts          # Skills + cron over WebRTC
+│           ├── db/index.ts               # IndexedDB conversation persistence
+│           ├── components/TabBar.tsx     # Bottom tab navigation
+│           └── App.tsx                   # Router + ConnectionProvider
 ├── data/                      # Gitignored runtime data
 │   ├── keys/                  # agent_identity.pem + approved_devices.json
 │   ├── chroma/                # ChromaDB vector store
@@ -205,7 +254,9 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `DASHBOARD_USERNAME` | `admin`                    | Dashboard login username                             |
 | `DASHBOARD_PASSWORD` | `nekoni`                   | Dashboard login password — **change this**           |
 | `AGENT_NAME`         | `nekoni`                   | Agent display name                                   |
-| `AGENT_PORT`         | `8000`                     | Agent HTTP port                                      |
+| `AGENT_PORT`         | `8000`                     | Agent HTTP port (mobile + dashboard)                 |
+| `AGENT_PORT_HTTPS`   | `8443`                     | Agent HTTPS port — SSL proxy → HTTP :8000 (web app)  |
+| `AGENT_CERTS_DIR`    | `data/certs`               | Path for auto-generated TLS certificate              |
 | `AGENT_KEYS_DIR`     | `./data/keys`              | Path for identity key storage                        |
 | `CHROMA_PATH`        | `./data/chroma`            | ChromaDB data directory                              |
 | `SQLITE_PATH`        | `./data/sqlite/memory.db`  | SQLite DB path                                       |
@@ -218,6 +269,7 @@ Copy `.env.example` to `.env` and adjust as needed.
 
 | Method   | Path                          | Description                                             |
 | -------- | ----------------------------- | ------------------------------------------------------- |
+| `GET`    | `/`                           | Branded page — confirms cert is trusted, shown to web app users |
 | `GET`    | `/health`                     | Healthcheck — `{status, ts, agent}`                     |
 | `GET`    | `/api/qr`                     | QR payload JSON for pairing                             |
 | `GET`    | `/api/qr/image`               | QR code as PNG image                                    |
@@ -275,18 +327,21 @@ Both agent and mobile have permanent Ed25519 keypairs.
 
 ```mermaid
 sequenceDiagram
-    participant M as Mobile
+    participant C as Client (Mobile / Web)
     participant A as Agent
     participant D as Dashboard
 
-    D-->>M: QR code (agentPubKey + signalUrl + roomId)
-    M->>A: POST /api/pair {mobilePubKey, sig, ts}
+    D-->>C: QR code (agentPubKey + signalUrl + agentUrl + agentUrlHttps + roomId)
+    Note over C: Web app: open agentUrlHttps in browser to accept self-signed cert
+    C->>A: POST /api/pair {mobilePubKey, sig, ts}
     A->>D: WS pairing_request
     Note over D: User sees approval prompt
     D->>A: POST /api/pair/approve
     Note over A: Stores mobilePubKey
-    A->>M: 200 OK
+    A->>C: 200 OK
 ```
+
+The QR payload includes both `agentUrl` (HTTP, used by mobile) and `agentUrlHttps` (HTTPS, used by the web app). Mobile connects over plain HTTP to avoid self-signed cert issues in React Native; the web app uses HTTPS to satisfy browser security requirements.
 
 ### Signaling Authentication
 

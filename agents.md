@@ -25,7 +25,7 @@ This document covers the internals of the nekoni agent: how it processes message
 A message travels through these layers before the user gets a response:
 
 ```
-Mobile (DataChannel)
+Mobile or Web App (DataChannel)
   │
   ▼
 DataChannelHandler._handle_message()    # webrtc/channel.py
@@ -36,6 +36,7 @@ DataChannelHandler._handle_message()    # webrtc/channel.py
   └─► plain message → on_message callback
   ▼
 main._on_datachannel_message()          # main.py
+  │  keyed by clientId — supports multiple concurrent peers (mobile + web app simultaneously)
   │  look up or create SessionContext
   ▼
 AgentLoop.run()                         # agent/loop.py
@@ -283,9 +284,9 @@ Relevant context from your knowledge base:
 | `DELETE` | `/api/rag/documents/{doc_id}` | Delete document and all its chunks |
 | `POST` | `/api/ingest` | Ingest a file (multipart/form-data) |
 
-### Mobile Upload Protocol (WebRTC)
+### Client Upload Protocol (WebRTC)
 
-Large files are chunked into 15 KB base64 segments sent as sequential DataChannel messages:
+Used by both the mobile app and the web app. Large files are chunked into 15 KB base64 segments sent as sequential DataChannel messages:
 
 ```
 mobile → {type: "rag_upload_start", uploadId, filename, totalChunks}
@@ -328,15 +329,23 @@ CREATE TABLE episodes (
 
 ## WebRTC + DataChannel Auth
 
+### Multi-peer Support
+
+The agent maintains a separate `RTCPeerConnection` per connected client, keyed by `clientId`. Multiple devices (e.g. mobile app and web app simultaneously) can be connected at the same time. Each peer goes through its own auth handshake and maintains its own session context.
+
 ### WebRTC Peer (`webrtc/peer.py`)
 
 On startup the agent:
 1. Loads or generates its Ed25519 identity key
 2. Opens a WebSocket to the signal server and joins its fixed room
-3. Waits for a `peer_joined` event (mobile connects)
-4. On receiving an `offer`, creates an `RTCPeerConnection` (aiortc), generates an answer, sends it back
-5. On `icecandidate`, forwards to the mobile peer via signaling
-6. Once DataChannel is established, hands off to `DataChannelHandler`
+3. Waits for `peer_joined` events (one per connecting client)
+4. On receiving an `offer`, creates a new `RTCPeerConnection` (aiortc) for that client, generates an answer, sends it back
+5. On `icecandidate`, forwards to the correct peer via signaling
+6. Once DataChannel is established, hands off to `DataChannelHandler` (one instance per peer)
+
+### HTTPS / TLS
+
+The web app connects to the agent over HTTPS (`:8443`) to satisfy browser security requirements. A `scripts/gen_cert.py` generates a self-signed certificate on first run; `scripts/run_agent.py` starts an asyncio SSL termination proxy that accepts TLS on `:8443` and pipes raw bytes to the plain HTTP uvicorn server on `:8000`. A single uvicorn/FastAPI instance handles all traffic — there is no second app initialisation.
 
 All outgoing signaling messages are signed:
 ```python
@@ -345,18 +354,18 @@ sig = sign_payload({k: v for k, v in msg.items()}, self._private_key)
 
 ### DataChannel Handshake (`webrtc/channel.py`)
 
-After the DTLS-encrypted DataChannel opens, a 4-step application-layer mutual auth runs:
+After the DTLS-encrypted DataChannel opens, a 4-step application-layer mutual auth runs (same for mobile and web app):
 
 ```
-Step 1  Mobile → Agent   {type:"hello", pubKey, nonce_m}
-Step 2  Agent  → Mobile  {type:"challenge", nonce_a, sig=sign(nonce_m)}
-Step 3  Mobile → Agent   {type:"response", sig=sign(nonce_a)}
-Step 4  Agent  → Mobile  {type:"ready"}
+Step 1  Client → Agent   {type:"hello", pubKey, nonce_m}
+Step 2  Agent  → Client  {type:"challenge", nonce_a, sig=sign(nonce_m)}
+Step 3  Client → Agent   {type:"response", sig=sign(nonce_a)}
+Step 4  Agent  → Client  {type:"ready"}
 ```
 
 - Step 1: Agent checks `pubKey` is in `approved_devices.json` — if not, closes immediately
-- Step 2: Agent signs mobile's nonce with its identity key so mobile can verify it's talking to the real agent (matches QR-scanned pubKey)
-- Step 3: Mobile signs agent's nonce — proves possession of the registered private key
+- Step 2: Agent signs client's nonce with its identity key so the client can verify it's talking to the real agent (matches QR-scanned pubKey)
+- Step 3: Client signs agent's nonce — proves possession of the registered private key
 - Step 4: Both sides are authenticated; normal message exchange begins
 
 Any failure at any step sends `{type:"auth_failed", reason}` and closes the channel.

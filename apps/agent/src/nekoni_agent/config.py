@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # Agent
     agent_host: str = "0.0.0.0"
     agent_port: int = 8000
+    agent_port_https: int = 8443
     agent_name: str = "nekoni"
 
     # Ollama
