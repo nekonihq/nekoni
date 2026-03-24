@@ -6,7 +6,8 @@
     "packages/*",
     "apps/signal",
     "apps/dashboard",
-    "apps/mobile"
+    "apps/mobile",
+    "apps/web"
   ],
   "scripts": {
     "dev:signal": "pnpm --filter @nekoni/signal dev",
