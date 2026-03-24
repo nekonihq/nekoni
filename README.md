@@ -25,8 +25,8 @@ graph TD
     MOBILE -- "Outbound connect" --> SIG
     WEB -- "Outbound connect" --> SIG
     AGENT -- "Outbound connect" --> SIG
-    MOBILE <-- "WebRTC DataChannel (HTTP :8000)" --> AGENT
-    WEB <-- "WebRTC DataChannel (HTTPS :8443)" --> AGENT
+    MOBILE <-- "WebRTC DataChannel" --> AGENT
+    WEB <-- "WebRTC DataChannel" --> AGENT
     DASH -- "Local Network\nHTTP + WebSocket" --> AGENT
 ```
 
@@ -48,7 +48,7 @@ graph TD
 | Signaling  | Node.js 22 · TypeScript · ws · express                                   |
 | Dashboard  | React 19 · Vite · TypeScript · Radix UI Themes                           |
 | Mobile     | React Native · Expo · react-native-webrtc                                |
-| Web App    | React 19 · Vite · TypeScript · PWA · qr-scanner                         |
+| Web App    | React 19 · Vite · TypeScript · PWA · qr-scanner                          |
 | LLM        | Ollama (any model)                                                       |
 | Embeddings | sentence-transformers (all-MiniLM-L6-v2)                                 |
 | Vector DB  | ChromaDB (embedded, file-based)                                          |
@@ -86,12 +86,12 @@ make pull
 make up
 ```
 
-| Service        | URL                     |
-| -------------- | ----------------------- |
-| Agent API      | http://localhost:8000   |
-| Agent API TLS  | https://localhost:8443  |
-| Dashboard      | http://localhost:8080   |
-| Ollama         | http://localhost:11434  |
+| Service       | URL                    |
+| ------------- | ---------------------- |
+| Agent API     | http://localhost:8000  |
+| Agent API TLS | https://localhost:8443 |
+| Dashboard     | http://localhost:8080  |
+| Ollama        | http://localhost:11434 |
 
 To change the model, update `OLLAMA_MODEL` in `.env` and run `make pull` again.
 
@@ -250,20 +250,20 @@ nekoni/
 
 Copy `.env.example` to `.env` and adjust as needed.
 
-| Variable             | Default                    | Description                                          |
-| -------------------- | -------------------------- | ---------------------------------------------------- |
-| `SIGNAL_URL`         | `wss://signal.nekoni.dev`  | Signal server WebSocket (self-host optional)         |
-| `OLLAMA_MODEL`       | `llama3.2`                 | Model to use — run `make pull` after changing        |
-| `OLLAMA_BASE_URL`    | `http://localhost:11434`   | Ollama endpoint                                      |
-| `DASHBOARD_USERNAME` | `admin`                    | Dashboard login username                             |
-| `DASHBOARD_PASSWORD` | `nekoni`                   | Dashboard login password — **change this**           |
-| `AGENT_NAME`         | `nekoni`                   | Agent display name                                   |
-| `AGENT_PORT`         | `8000`                     | Agent HTTP port (mobile + dashboard)                 |
-| `AGENT_PORT_HTTPS`   | `8443`                     | Agent HTTPS port — SSL proxy → HTTP :8000 (web app)  |
-| `AGENT_CERTS_DIR`    | `data/certs`               | Path for auto-generated TLS certificate              |
-| `AGENT_KEYS_DIR`     | `./data/keys`              | Path for identity key storage                        |
-| `CHROMA_PATH`        | `./data/chroma`            | ChromaDB data directory                              |
-| `SQLITE_PATH`        | `./data/sqlite/memory.db`  | SQLite DB path                                       |
+| Variable             | Default                   | Description                                         |
+| -------------------- | ------------------------- | --------------------------------------------------- |
+| `SIGNAL_URL`         | `wss://signal.nekoni.dev` | Signal server WebSocket (self-host optional)        |
+| `OLLAMA_MODEL`       | `llama3.2`                | Model to use — run `make pull` after changing       |
+| `OLLAMA_BASE_URL`    | `http://localhost:11434`  | Ollama endpoint                                     |
+| `DASHBOARD_USERNAME` | `admin`                   | Dashboard login username                            |
+| `DASHBOARD_PASSWORD` | `nekoni`                  | Dashboard login password — **change this**          |
+| `AGENT_NAME`         | `nekoni`                  | Agent display name                                  |
+| `AGENT_PORT`         | `8000`                    | Agent HTTP port (mobile + dashboard)                |
+| `AGENT_PORT_HTTPS`   | `8443`                    | Agent HTTPS port — SSL proxy → HTTP :8000 (web app) |
+| `AGENT_CERTS_DIR`    | `data/certs`              | Path for auto-generated TLS certificate             |
+| `AGENT_KEYS_DIR`     | `./data/keys`             | Path for identity key storage                       |
+| `CHROMA_PATH`        | `./data/chroma`           | ChromaDB data directory                             |
+| `SQLITE_PATH`        | `./data/sqlite/memory.db` | SQLite DB path                                      |
 
 ---
 
@@ -271,35 +271,35 @@ Copy `.env.example` to `.env` and adjust as needed.
 
 ### Agent (`localhost:8000`)
 
-| Method   | Path                          | Description                                             |
-| -------- | ----------------------------- | ------------------------------------------------------- |
+| Method   | Path                          | Description                                                     |
+| -------- | ----------------------------- | --------------------------------------------------------------- |
 | `GET`    | `/`                           | Branded page — confirms cert is trusted, shown to web app users |
-| `GET`    | `/health`                     | Healthcheck — `{status, ts, agent}`                     |
-| `GET`    | `/api/qr`                     | QR payload JSON for pairing                             |
-| `GET`    | `/api/qr/image`               | QR code as PNG image                                    |
-| `POST`   | `/api/pair`                   | Mobile sends signed pairing request                     |
-| `GET`    | `/api/pair/pending`           | List pending pairing requests                           |
-| `POST`   | `/api/pair/approve`           | Dashboard approves/rejects pairing                      |
-| `GET`    | `/api/pair/devices`           | List approved devices                                   |
-| `DELETE` | `/api/pair/devices/{key}`     | Revoke a device and close its connection                |
-| `POST`   | `/api/ingest`                 | Ingest a document into RAG (multipart/form-data `file`) |
-| `GET`    | `/api/rag/documents`          | List all RAG documents `[{doc_id, source, chunks}]`     |
-| `DELETE` | `/api/rag/documents/{doc_id}` | Delete a document and all its chunks                    |
-| `GET`    | `/api/skills`                 | List all skills                                         |
-| `POST`   | `/api/skills`                 | Create a skill `{name, prompt, description}`            |
-| `PUT`    | `/api/skills/{id}`            | Update a skill                                          |
-| `DELETE` | `/api/skills/{id}`            | Delete skill and its cron jobs                          |
-| `POST`   | `/api/skills/{id}/run`        | Run a skill immediately                                 |
-| `GET`    | `/api/cron`                   | List all cron jobs                                      |
-| `POST`   | `/api/cron`                   | Create cron job `{skillId, cronExpression, enabled}`    |
-| `PUT`    | `/api/cron/{id}`              | Update cron expression or enabled state                 |
-| `DELETE` | `/api/cron/{id}`              | Delete a cron job                                       |
-| `POST`   | `/api/cron/{id}/run`          | Trigger a cron job immediately                          |
-| `GET`    | `/api/traces`                 | List recent trace events (optional `?session_id=`)      |
-| `DELETE` | `/api/traces`                 | Clear all trace history                                 |
-| `GET`    | `/api/traces/sessions`        | List distinct session IDs with counts                   |
-| `GET`    | `/api/tools`                  | List registered tools (JSON Schema)                     |
-| `WS`     | `/ws/traces`                  | Live trace event stream (connect from dashboard)        |
+| `GET`    | `/health`                     | Healthcheck — `{status, ts, agent}`                             |
+| `GET`    | `/api/qr`                     | QR payload JSON for pairing                                     |
+| `GET`    | `/api/qr/image`               | QR code as PNG image                                            |
+| `POST`   | `/api/pair`                   | Mobile sends signed pairing request                             |
+| `GET`    | `/api/pair/pending`           | List pending pairing requests                                   |
+| `POST`   | `/api/pair/approve`           | Dashboard approves/rejects pairing                              |
+| `GET`    | `/api/pair/devices`           | List approved devices                                           |
+| `DELETE` | `/api/pair/devices/{key}`     | Revoke a device and close its connection                        |
+| `POST`   | `/api/ingest`                 | Ingest a document into RAG (multipart/form-data `file`)         |
+| `GET`    | `/api/rag/documents`          | List all RAG documents `[{doc_id, source, chunks}]`             |
+| `DELETE` | `/api/rag/documents/{doc_id}` | Delete a document and all its chunks                            |
+| `GET`    | `/api/skills`                 | List all skills                                                 |
+| `POST`   | `/api/skills`                 | Create a skill `{name, prompt, description}`                    |
+| `PUT`    | `/api/skills/{id}`            | Update a skill                                                  |
+| `DELETE` | `/api/skills/{id}`            | Delete skill and its cron jobs                                  |
+| `POST`   | `/api/skills/{id}/run`        | Run a skill immediately                                         |
+| `GET`    | `/api/cron`                   | List all cron jobs                                              |
+| `POST`   | `/api/cron`                   | Create cron job `{skillId, cronExpression, enabled}`            |
+| `PUT`    | `/api/cron/{id}`              | Update cron expression or enabled state                         |
+| `DELETE` | `/api/cron/{id}`              | Delete a cron job                                               |
+| `POST`   | `/api/cron/{id}/run`          | Trigger a cron job immediately                                  |
+| `GET`    | `/api/traces`                 | List recent trace events (optional `?session_id=`)              |
+| `DELETE` | `/api/traces`                 | Clear all trace history                                         |
+| `GET`    | `/api/traces/sessions`        | List distinct session IDs with counts                           |
+| `GET`    | `/api/tools`                  | List registered tools (JSON Schema)                             |
+| `WS`     | `/ws/traces`                  | Live trace event stream (connect from dashboard)                |
 
 ### Ingest a document
 
