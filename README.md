@@ -4,6 +4,8 @@
 
 # nekoni
 
+**[nekoni.dev](https://nekoni.dev)** · [app.nekoni.dev](https://app.nekoni.dev)
+
 A locally-run AI agent on your home machine, accessible from your phone via P2P WebRTC. No cloud. No subscription. Your data stays on your hardware.
 
 ```mermaid
