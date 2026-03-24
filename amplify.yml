@@ -1,17 +1,19 @@
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - corepack enable
-        - pnpm install
-    build:
-      commands:
-        - pnpm --filter @nekoni/web build
-  artifacts:
-    baseDirectory: apps/web/dist
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
+applications:
+  - appRoot: apps/web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - corepack enable
+            - pnpm install
+        build:
+          commands:
+            - pnpm --filter @nekoni/web build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
