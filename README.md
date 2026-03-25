@@ -6,7 +6,9 @@
 
 **[nekoni.dev](https://nekoni.dev)** · [app.nekoni.dev](https://app.nekoni.dev)
 
-A locally-run AI agent on your home machine, accessible from your phone via P2P WebRTC. No cloud. No subscription. Your data stays on your hardware.
+## Run your own AI. Own your data. Access it from anywhere.
+
+nekoni is a locally-run AI agent that lives on your home machine and talks to your phone over a direct P2P connection - no cloud relay, no subscription, no data leaving your hardware. Pair once, chat forever.
 
 ```mermaid
 graph TD
