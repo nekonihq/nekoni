@@ -1,421 +1,94 @@
 <p align="center">
-  <img src="assets/logo.png" width="400" alt="nekoni logo" />
+  <img src="assets/logo.png" width="400" alt="Nekoni logo" />
 </p>
 
-# nekoni
+# 🐱 Nekoni — Local AI Agent You Control From Your Phone
 
-**[nekoni.dev](https://nekoni.dev)** · [app.nekoni.dev](https://app.nekoni.dev)
+**[nekoni.dev](https://nekoni.dev)** · **[app.nekoni.dev](https://app.nekoni.dev)**
 
-## Run your own AI. Own your data. Access it from anywhere.
+> Run your own AI. Own your data. Access it from your phone — no cloud required.
 
-nekoni is a locally-run AI agent that lives on your home machine and talks to your phone over a direct P2P connection - no cloud relay, no subscription, no data leaving your hardware. Pair once, chat forever.
+Nekoni is a self-hosted AI agent that runs on your machine and connects directly to your phone via WebRTC.
 
-```mermaid
-graph TD
-    SIG["🌐 signal.nekoni.dev (public)\nWebRTC signaling only\nSDP offer/answer + ICE"]
-
-    subgraph CLIENTS ["📱 Clients"]
-        MOBILE["Mobile App\nReact Native + Expo"]
-        WEB["Web App\nReact PWA (Vite)"]
-    end
-
-    subgraph HOME ["🏠 Home Machine"]
-        AGENT["nekoni-agent :8000 / :8443\nOllama · ChromaDB · SQLite\nRAG + Tools + Skills"]
-        DASH["Web Dashboard\npairing · traces · RAG · skills · monitor"]
-    end
-
-    MOBILE -- "Outbound connect" --> SIG
-    WEB -- "Outbound connect" --> SIG
-    AGENT -- "Outbound connect" --> SIG
-    MOBILE <-- "WebRTC DataChannel" --> AGENT
-    WEB <-- "WebRTC DataChannel" --> AGENT
-    DASH -- "Local Network\nHTTP + WebSocket" --> AGENT
-```
+No cloud. No subscriptions. No data leaving your hardware.
 
 ## Features
 
-- **Fully local** — LLM inference via Ollama (any model), embeddings via sentence-transformers, vector search via ChromaDB
-- **P2P transport** — direct WebRTC DataChannel mobile ↔ agent, no relay; public signal server used only for SDP/ICE exchange
-- **Key-pair security** — Ed25519 identity keys, mutual auth handshake, no passwords
-- **RAG** — ingest documents (PDF, TXT, MD, CSV), query from chat; manage from dashboard or phone
-- **Skills** — named prompt templates that run through the agent; schedule them via cron from dashboard or phone
-- **Extensible** — add tools (atomic, LLM-invokable) in a few lines of Python
-- **Observable** — live trace stream to web dashboard, filterable by session
+- **Fully local** — LLM inference via Ollama, embeddings via sentence-transformers, vector search via ChromaDB
+- **Phone access** — connect from mobile or web over direct WebRTC DataChannel
+- **No cloud relay for data** — public signaling is used only for SDP/ICE exchange
+- **Key-pair security** — Ed25519 identity keys and mutual authentication
+- **RAG** — ingest documents and query them from chat
+- **Skills** — reusable prompt templates with cron scheduling
+- **Extensible** — add tools in a few lines of Python
+- **Observable** — live trace stream in the dashboard
 
-## Tech Stack
-
-| Component  | Tech                                                                     |
-| ---------- | ------------------------------------------------------------------------ |
-| Agent      | Python 3.12 · FastAPI · uvicorn · aiortc                                 |
-| Signaling  | Node.js 22 · TypeScript · ws · express                                   |
-| Dashboard  | React 19 · Vite · TypeScript · Radix UI Themes                           |
-| Mobile     | React Native · Expo · react-native-webrtc                                |
-| Web App    | React 19 · Vite · TypeScript · PWA · qr-scanner                          |
-| LLM        | Ollama (any model)                                                       |
-| Embeddings | sentence-transformers (all-MiniLM-L6-v2)                                 |
-| Vector DB  | ChromaDB (embedded, file-based)                                          |
-| State      | SQLite + aiosqlite · IndexedDB (web app)                                 |
-| Crypto     | Ed25519 — cryptography (Python) · @noble/ed25519 (Node) · tweetnacl (RN) |
-| Monorepo   | pnpm workspaces + uv                                                     |
-
----
-
-## Prerequisites
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- `make` (macOS/Linux: built-in; Windows: via [choco](https://chocolatey.org/) or WSL)
-- ~4 GB disk for Ollama model
-
-Everything else (Ollama, uv, Python, pnpm) is installed by `make install`.
-
----
-
-## Quick Start
+## Quick Start (2–3 min)
 
 ```bash
-git clone https://github.com/nekonihq/nekoni && cd nekoni
-
-# Copy env template and adjust as needed (DASHBOARD_PASSWORD at minimum)
+git clone https://github.com/nekonihq/nekoni
+cd nekoni
 cp .env.example .env
-
-# Install prerequisites (Ollama, uv, pnpm)
 make install
-
-# Pull the AI model (once)
 make pull
-
-# Start everything — dashboard in Docker, agent on host
 make up
 ```
 
-| Service       | URL                    |
-| ------------- | ---------------------- |
-| Agent API     | http://localhost:8000  |
-| Agent API TLS | https://localhost:8443 |
-| Dashboard     | http://localhost:8080  |
-| Ollama        | http://localhost:11434 |
+## Requirements
 
-To change the model, update `OLLAMA_MODEL` in `.env` and run `make pull` again.
+- Docker Desktop
+- `make`
+- ~4 GB disk space for an Ollama model
 
-### Stop
+Everything else is installed automatically by `make install`.
 
-```bash
-make down
-```
-
----
-
-## Development
-
-The agent runs on the host (not in Docker) so WebRTC works correctly on all platforms — `make up` handles this automatically.
-
-For dashboard hot-reload during development:
-
-```bash
-# Terminal 1 — Ollama + agent
-make up
-
-# Terminal 2 — dashboard dev server (port 5173)
-pnpm install
-pnpm dev:dashboard
-```
-
----
-
-## Web App
-
-A browser-based PWA with full feature parity to the mobile app: chat, RAG knowledge base, skills & cron, settings, and conversation history. Connects to the agent via WebRTC over the HTTPS endpoint so the browser's mixed-content restrictions are satisfied.
-
-**[app.nekoni.dev](https://app.nekoni.dev)** — hosted build (pair with your local agent)
-
-```bash
-cd apps/web
-pnpm install
-pnpm dev            # dev server at https://localhost:5173 (self-signed cert)
-```
-
-**First launch flow:**
-
-1. Start the agent with `make up` — this also generates a self-signed TLS cert and starts the HTTPS proxy on `:8443`
-2. Open the web app and tap **Pair**
-3. Scan the QR code displayed on the dashboard → **Pair** page
-4. The app shows a **Trust the agent** step — tap **Open Agent in Browser**, accept the self-signed certificate warning, then return to the app
-5. Tap **Continue** — pairing request is sent; approve it on the dashboard
-6. App navigates to chat and connects automatically
-
-> The cert-trust step is required once per browser because the agent uses a locally generated self-signed certificate. After accepting it the browser remembers the exception.
-
----
-
-## Mobile App
-
-```bash
-cd apps/mobile
-pnpm install
-pnpm start          # starts Expo dev server
-# then press i (iOS) or a (Android)
-```
-
-**First launch flow:**
-
-1. App opens camera to scan QR code
-2. Open dashboard → **Pair** page — QR code is displayed
-3. Scan the QR code — pairing request is sent to agent
-4. Dashboard shows approval prompt — click **Approve**
-5. App navigates to chat, connects automatically
-
----
-
-## Project Structure
-
-```
-nekoni/
-├── packages/
-│   └── shared-types/          # TypeScript types shared across all JS/TS packages
-│       └── src/
-│           ├── signaling.ts   # SignalMessage, AgentQRPayload, PairingRequest
-│           └── agent.ts       # AgentMessage, TraceEvent, DataChannelHandshake
-├── apps/
-│   ├── agent/                 # Python AI agent (FastAPI)
-│   │   └── src/nekoni_agent/
-│   │       ├── main.py        # FastAPI app + lifespan
-│   │       ├── config.py      # pydantic-settings
-│   │       ├── crypto/        # Ed25519 key management
-│   │       ├── webrtc/        # RTCPeerConnection + DataChannel auth
-│   │       ├── agent/         # ReAct loop + session context
-│   │       ├── tools/         # Tool ABC + registry + builtins
-│   │       ├── skills/        # Skills + cron scheduling (SQLite + APScheduler)
-│   │       ├── rag/           # ChromaDB + sentence-transformers pipeline
-│   │       ├── memory/        # Working memory + SQLite episodic memory
-│   │       ├── llm/           # Ollama async client
-│   │       └── api/           # REST routes + WebSocket trace broadcast
-│   ├── signal/                # Node.js WebRTC signaling server
-│   │   └── src/
-│   │       ├── server.ts      # HTTP + WebSocket server
-│   │       ├── rooms.ts       # Ephemeral room management
-│   │       └── handlers.ts    # Message routing + signature validation
-│   ├── dashboard/             # React admin dashboard (Radix UI)
-│   │   └── src/
-│   │       ├── pages/Pair.tsx        # QR display + pairing approvals
-│   │       ├── pages/Traces.tsx      # Live trace viewer (session filter)
-│   │       ├── pages/Monitor.tsx     # Health + tools + paired devices
-│   │       ├── pages/Knowledge.tsx   # RAG document management
-│   │       ├── pages/Skills.tsx      # Skills list + cron jobs
-│   │       └── pages/SkillEditor.tsx # Markdown skill prompt editor
-│   ├── mobile/                # React Native / Expo
-│   │   └── src/
-│   │       ├── app/(tabs)/chat.tsx       # Chat UI
-│   │       ├── app/(tabs)/knowledge.tsx  # RAG management from phone
-│   │       ├── app/(tabs)/skills.tsx     # Skills + cron from phone
-│   │       ├── app/(tabs)/settings.tsx   # Identity + paired agents
-│   │       ├── app/pair.tsx              # QR scanner + pairing flow
-│   │       ├── ConnectionContext.tsx     # Shared WebRTC + auth state
-│   │       └── hooks/
-│   │           ├── useIdentity.ts   # Ed25519 keygen + secure storage
-│   │           ├── useWebRTC.ts     # Signed signaling + peer connection
-│   │           ├── useAgent.ts      # DataChannel auth + message state
-│   │           ├── useRAG.ts        # RAG document management over WebRTC
-│   │           └── useSkills.ts     # Skill + cron management over WebRTC
-│   └── web/                   # React PWA (Vite)
-│       └── src/
-│           ├── contexts/
-│           │   ├── AgentContext.tsx      # Paired agents list (IndexedDB)
-│           │   └── ConnectionContext.tsx # Global WebRTC + auth state
-│           ├── pages/
-│           │   ├── ChatPage.tsx          # Chat UI + history/new chat
-│           │   ├── HistoryPage.tsx       # Conversation list
-│           │   ├── KnowledgePage.tsx     # RAG document management
-│           │   ├── SkillsPage.tsx        # Skills + cron scheduling
-│           │   ├── SettingsPage.tsx      # Identity + paired agents
-│           │   └── PairPage.tsx          # QR scan + cert trust + pairing
-│           ├── hooks/
-│           │   ├── useIdentity.ts        # Ed25519 keygen (localStorage)
-│           │   ├── useWebRTC.ts          # Signed signaling + peer connection
-│           │   ├── useAgent.ts           # DataChannel auth + message state
-│           │   ├── useRAG.ts             # RAG over WebRTC
-│           │   └── useSkills.ts          # Skills + cron over WebRTC
-│           ├── db/index.ts               # IndexedDB conversation persistence
-│           ├── components/TabBar.tsx     # Bottom tab navigation
-│           └── App.tsx                   # Router + ConnectionProvider
-├── data/                      # Gitignored runtime data
-│   ├── keys/                  # agent_identity.pem + approved_devices.json
-│   ├── chroma/                # ChromaDB vector store
-│   ├── sqlite/                # Episodic memory DB
-│   └── ollama/                # Ollama model weights
-├── docker-compose.yml         # Ollama + dashboard
-├── Makefile                   # make up / make down
-```
-
----
-
-## Configuration
-
-Copy `.env.example` to `.env` and adjust as needed.
-
-| Variable             | Default                   | Description                                         |
-| -------------------- | ------------------------- | --------------------------------------------------- |
-| `SIGNAL_URL`         | `wss://signal.nekoni.dev` | Signal server WebSocket (self-host optional)        |
-| `OLLAMA_MODEL`       | `llama3.2`                | Model to use — run `make pull` after changing       |
-| `OLLAMA_BASE_URL`    | `http://localhost:11434`  | Ollama endpoint                                     |
-| `DASHBOARD_USERNAME` | `admin`                   | Dashboard login username                            |
-| `DASHBOARD_PASSWORD` | `nekoni`                  | Dashboard login password — **change this**          |
-| `AGENT_NAME`         | `nekoni`                  | Agent display name                                  |
-| `AGENT_PORT`         | `8000`                    | Agent HTTP port (mobile + dashboard)                |
-| `AGENT_PORT_HTTPS`   | `8443`                    | Agent HTTPS port — SSL proxy → HTTP :8000 (web app) |
-| `AGENT_CERTS_DIR`    | `data/certs`              | Path for auto-generated TLS certificate             |
-| `AGENT_KEYS_DIR`     | `./data/keys`             | Path for identity key storage                       |
-| `CHROMA_PATH`        | `./data/chroma`           | ChromaDB data directory                             |
-| `SQLITE_PATH`        | `./data/sqlite/memory.db` | SQLite DB path                                      |
-
----
-
-## API Reference
-
-### Agent (`localhost:8000`)
-
-| Method   | Path                          | Description                                                     |
-| -------- | ----------------------------- | --------------------------------------------------------------- |
-| `GET`    | `/`                           | Branded page — confirms cert is trusted, shown to web app users |
-| `GET`    | `/health`                     | Healthcheck — `{status, ts, agent}`                             |
-| `GET`    | `/api/qr`                     | QR payload JSON for pairing                                     |
-| `GET`    | `/api/qr/image`               | QR code as PNG image                                            |
-| `POST`   | `/api/pair`                   | Mobile sends signed pairing request                             |
-| `GET`    | `/api/pair/pending`           | List pending pairing requests                                   |
-| `POST`   | `/api/pair/approve`           | Dashboard approves/rejects pairing                              |
-| `GET`    | `/api/pair/devices`           | List approved devices                                           |
-| `DELETE` | `/api/pair/devices/{key}`     | Revoke a device and close its connection                        |
-| `POST`   | `/api/ingest`                 | Ingest a document into RAG (multipart/form-data `file`)         |
-| `GET`    | `/api/rag/documents`          | List all RAG documents `[{doc_id, source, chunks}]`             |
-| `DELETE` | `/api/rag/documents/{doc_id}` | Delete a document and all its chunks                            |
-| `GET`    | `/api/skills`                 | List all skills                                                 |
-| `POST`   | `/api/skills`                 | Create a skill `{name, prompt, description}`                    |
-| `PUT`    | `/api/skills/{id}`            | Update a skill                                                  |
-| `DELETE` | `/api/skills/{id}`            | Delete skill and its cron jobs                                  |
-| `POST`   | `/api/skills/{id}/run`        | Run a skill immediately                                         |
-| `GET`    | `/api/cron`                   | List all cron jobs                                              |
-| `POST`   | `/api/cron`                   | Create cron job `{skillId, cronExpression, enabled}`            |
-| `PUT`    | `/api/cron/{id}`              | Update cron expression or enabled state                         |
-| `DELETE` | `/api/cron/{id}`              | Delete a cron job                                               |
-| `POST`   | `/api/cron/{id}/run`          | Trigger a cron job immediately                                  |
-| `GET`    | `/api/traces`                 | List recent trace events (optional `?session_id=`)              |
-| `DELETE` | `/api/traces`                 | Clear all trace history                                         |
-| `GET`    | `/api/traces/sessions`        | List distinct session IDs with counts                           |
-| `GET`    | `/api/tools`                  | List registered tools (JSON Schema)                             |
-| `WS`     | `/ws/traces`                  | Live trace event stream (connect from dashboard)                |
-
-### Ingest a document
-
-```bash
-curl -X POST http://localhost:8000/api/ingest \
-  -F "file=@/path/to/document.pdf"
-# → {"success": true, "documentId": "abc123", "chunks": 42, "filename": "document.pdf"}
-```
-
-### Signal server (`signal.nekoni.dev` / self-hosted `localhost:3000`)
-
-| Method | Path      | Description                                         |
-| ------ | --------- | --------------------------------------------------- |
-| `GET`  | `/health` | Healthcheck                                         |
-| `WS`   | `/`       | WebSocket — peers join and relay signaling messages |
-
----
-
-## Security Model
-
-### Identity Keys (Ed25519)
-
-Both agent and mobile have permanent Ed25519 keypairs.
-
-- **Agent key** — generated on first run, stored at `data/keys/agent_identity.pem`. The public key is embedded in the QR code.
-- **Mobile key** — generated on first app install, stored in iOS Keychain / Android Keystore via `expo-secure-store`. Never leaves the device.
-
-### Pairing (one-time per device, local network only)
+## How It Works
 
 ```mermaid
-sequenceDiagram
-    participant C as Client (Mobile / Web)
-    participant A as Agent
-    participant D as Dashboard
+flowchart TD
+    CLIENT["📱 Phone / Browser"]
+    WEBRTC["🔗 WebRTC (P2P)"]
+    AGENT["🏠 Your Machine (Nekoni)"]
+    MODEL["🧠 Local Model (Ollama)"]
 
-    D-->>C: QR code (agentPubKey + signalUrl + agentUrl + agentUrlHttps + roomId)
-    Note over C: Web app: open agentUrlHttps in browser to accept self-signed cert
-    C->>A: POST /api/pair {mobilePubKey, sig, ts}
-    A->>D: WS pairing_request
-    Note over D: User sees approval prompt
-    D->>A: POST /api/pair/approve
-    Note over A: Stores mobilePubKey
-    A->>C: 200 OK
+    CLIENT --> WEBRTC --> AGENT --> MODEL
 ```
 
-The QR payload includes both `agentUrl` (HTTP, used by mobile) and `agentUrlHttps` (HTTPS, used by the web app). Mobile connects over plain HTTP to avoid self-signed cert issues in React Native; the web app uses HTTPS to satisfy browser security requirements.
+Nekoni uses direct peer-to-peer communication between your device and your home machine. The public signal server is only used to establish the WebRTC connection.
 
-### Signaling Authentication
+More details:
 
-Every WebSocket message is signed:
+- [Architecture](docs/architecture.md)
+- [Security model](docs/security.md)
 
-```
-sig = base64url(Ed25519Sign(sha256(JSON.stringify(payload_without_sig)), senderPrivKey))
-```
+## Use Cases
 
-The signal server verifies signatures and enforces a ±5 minute timestamp window against replay attacks.
+- Private AI assistant at home
+- Local alternative to cloud AI tools
+- AI-powered automations on your own hardware
+- Experimenting with local-first AI workflows
+- Building custom tools and agent skills
 
-### DataChannel Mutual Auth (4 steps)
+## Documentation
 
-After the WebRTC connection opens, before any messages are accepted:
+- [Setup](docs/setup.md)
+- [Architecture](docs/architecture.md)
+- [Development](docs/development.md)
+- [Web app](docs/web.md)
+- [Mobile app](docs/mobile.md)
+- [Configuration](docs/config.md)
+- [API reference](docs/api.md)
+- [Security](docs/security.md)
 
-```mermaid
-sequenceDiagram
-    participant M as Mobile
-    participant A as Agent
+## ⭐ Support
 
-    M->>A: Hello {pubKey, nonce_m}
-    Note over A: Verify pubKey in approved list
-    A->>M: Challenge {nonce_a, sig: sign(nonce_m, agentPrivKey)}
-    Note over M: Verify sig vs QR-scanned agentPubKey
-    M->>A: Response {sig: sign(nonce_a, mobilePrivKey)}
-    Note over A: Verify sig vs approved pubKey
-    A->>M: Ready
+If you find Nekoni useful:
 
-    Note over M,A: Normal message exchange
-```
+- Star the repo
+- Share your setup
+- Build something on top of it
+- Open issues and contribute improvements
 
-Connection is dropped immediately on any failure. No fallback.
+## License
 
----
-
-## Adding a Tool
-
-Create a new file in `apps/agent/src/nekoni_agent/tools/builtin/`:
-
-```python
-from ..base import Tool
-
-class MyTool(Tool):
-    @property
-    def name(self) -> str:
-        return "my_tool"
-
-    @property
-    def description(self) -> str:
-        return "Does something useful."
-
-    @property
-    def parameters_schema(self) -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "input": {"type": "string", "description": "The input"},
-            },
-            "required": ["input"],
-        }
-
-    async def execute(self, input: str) -> str:
-        return f"result: {input}"
-```
-
-Register it in `main.py`:
-
-```python
-from .tools.builtin.my_tool import MyTool
-tool_registry.register(MyTool())
-```
+MIT
