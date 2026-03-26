@@ -8,6 +8,8 @@
 
 > Run your own AI. Own your data. Access it from your phone — no cloud required.
 
+![demo](./assets/demo.gif)
+
 Nekoni is a self-hosted AI agent that runs on your machine and connects directly to your phone via WebRTC.
 
 No cloud. No subscriptions. No data leaving your hardware.
