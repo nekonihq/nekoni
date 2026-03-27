@@ -4,7 +4,7 @@ export
 OLLAMA_MODEL ?= llama3.2
 OS := $(shell uname -s 2>/dev/null || echo Windows)
 
-.PHONY: up down build_up install pull
+.PHONY: up down build_up install pull _kill_agent
 
 install: _check_docker _install_uv _install_ollama _install_pnpm _sync_deps
 	@echo ""
@@ -51,15 +51,18 @@ _sync_deps:
 pull:
 	ollama pull $(OLLAMA_MODEL)
 
-up:
+_kill_agent:
+	@lsof -ti:8443 | xargs kill 2>/dev/null || true
+
+up: _kill_agent
 	docker compose up -d
 	uv run --project apps/agent python scripts/gen_cert.py data/certs
 	uv run --project apps/agent --env-file .env python scripts/run_agent.py
 
-build_up:
+build_up: _kill_agent
 	docker compose up -d --build
 	uv run --project apps/agent python scripts/gen_cert.py data/certs
 	uv run --project apps/agent --env-file .env python scripts/run_agent.py
 
-down:
+down: _kill_agent
 	docker compose down

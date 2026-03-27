@@ -25,24 +25,26 @@ No cloud. No subscriptions. No data leaving your hardware.
 - **Extensible** — add tools in a few lines of Python
 - **Observable** — live trace stream in the dashboard
 
-## Quick Start (2–3 min)
+## Quick Start
 
 ```bash
-git clone https://github.com/nekonihq/nekoni
-cd nekoni
-cp .env.example .env
-make install
-make pull
-make up
+curl -sSL https://github.com/nekonihq/nekoni/blob/main/install.sh | bash
+```
+
+Installs all dependencies, pulls the default model, and starts Nekoni. Requires ~4 GB disk space for the model.
+
+**Stop / start:**
+
+```bash
+cd ~/.nekoni && make down
+cd ~/.nekoni && make up
 ```
 
 ## Requirements
 
-- Docker Desktop
-- `make`
-- ~4 GB disk space for an Ollama model
-
-Everything else is installed automatically by `make install`.
+- macOS or Linux (Windows: use WSL2)
+- Docker Desktop — installed automatically (Homebrew on macOS, get.docker.com on Linux)
+- ~4 GB disk space for the Ollama model
 
 ## How It Works
 
