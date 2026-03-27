@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Nekoni installer
-# Usage: curl -sSL https://github.com/nekonihq/nekoni/blob/main/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/nekonihq/nekoni/refs/heads/main/install.sh | bash
 #
 # Options (env vars):
 #   NEKONI_DIR    - install directory (default: $HOME/.nekoni)

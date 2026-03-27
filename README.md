@@ -28,7 +28,7 @@ No cloud. No subscriptions. No data leaving your hardware.
 ## Quick Start
 
 ```bash
-curl -sSL https://github.com/nekonihq/nekoni/blob/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/nekonihq/nekoni/refs/heads/main/install.sh | bash
 ```
 
 Installs all dependencies, pulls the default model, and starts Nekoni. Requires ~4 GB disk space for the model.
