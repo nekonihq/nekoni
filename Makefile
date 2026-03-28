@@ -52,7 +52,7 @@ pull:
 	ollama pull $(OLLAMA_MODEL)
 
 _kill_agent:
-	@lsof -ti:8443 | xargs kill 2>/dev/null || true
+	@lsof -ti:8443,8000 | sort -u | xargs kill 2>/dev/null || true
 
 up: _kill_agent
 	docker compose up -d

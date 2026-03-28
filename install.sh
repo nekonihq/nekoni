@@ -189,10 +189,10 @@ start_services() {
 
   log "Starting agent..."
   local log_file="$INSTALL_DIR/data/agent.log"
-  uv run --project "$INSTALL_DIR/apps/agent" \
-    --env-file "$INSTALL_DIR/.env" \
-    python "$INSTALL_DIR/scripts/run_agent.py" \
-    > "$log_file" 2>&1 &
+  (cd "$INSTALL_DIR" && uv run --project apps/agent \
+    --env-file .env \
+    python scripts/run_agent.py \
+    > "$log_file" 2>&1 &)
   info "Agent running in background. Logs: $log_file"
 }
 
