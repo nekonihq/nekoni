@@ -53,7 +53,10 @@ class AgentPeer:
         def _exc_handler(loop: asyncio.AbstractEventLoop, ctx: dict) -> None:
             if isinstance(ctx.get("exception"), RTCInvalidStateError):
                 return
-            (_default or loop.default_exception_handler)(loop, ctx)
+            if _default:
+                _default(loop, ctx)
+            else:
+                loop.default_exception_handler(ctx)
         asyncio.get_event_loop().set_exception_handler(_exc_handler)
 
         signal_url = settings.signal_url
@@ -98,6 +101,7 @@ class AgentPeer:
 
     async def _handle_signal(self, msg: dict) -> None:
         msg_type = msg.get("type")
+        print(f"[peer] signal ← {msg_type}: {json.dumps({k: v for k, v in msg.items() if k not in ('sdp', 'sig')})}")
 
         if msg_type == "peer_joined":
             print(f"[peer] Peer joined: {msg.get('clientId')}")
