@@ -4,7 +4,7 @@
 
 # 🐱 Nekoni — Local AI Agent You Control From Your Phone
 
-**[nekoni.dev](https://nekoni.dev)** · **[app.nekoni.dev](https://app.nekoni.dev)**
+**[nekoni.dev](https://nekoni.dev)** · **[app.nekoni.dev](https://app.nekoni.dev)** · **[iOS App](https://apps.apple.com/us/app/nekoni/id6760954228)**
 
 > Run your own AI. Own your data. Access it from your phone — no cloud required.
 
