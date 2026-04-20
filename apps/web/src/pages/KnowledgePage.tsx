@@ -86,7 +86,7 @@ export default function KnowledgePage() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.txt,.md,.csv"
+          accept=".txt,.md,.csv,.pdf,.docx,.xlsx,.pptx,.html,.png,.jpg,.jpeg,.tiff,.bmp"
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />

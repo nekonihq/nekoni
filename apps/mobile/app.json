@@ -32,6 +32,10 @@
         "android.permission.RECORD_AUDIO"
       ]
     },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/fd1d5527-2948-4374-bf6f-2a9e6bd83b96"
+    },
     "plugins": [
       "expo-router",
       "expo-secure-store",

@@ -37,7 +37,20 @@ export default function KnowledgeScreen() {
 
   const handleUpload = async () => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'text/plain', 'text/markdown', 'text/csv'],
+      type: [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/html',
+        'text/plain',
+        'text/markdown',
+        'text/csv',
+        'image/png',
+        'image/jpeg',
+        'image/tiff',
+        'image/bmp',
+      ],
       copyToCacheDirectory: true,
     })
     if (result.canceled) return

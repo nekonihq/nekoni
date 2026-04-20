@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # LLM settings
     max_react_iterations: int = 8
     rag_top_k: int = 5
-    rag_min_score: float = 0.3
+    rag_min_score: float = 0.15
     chunk_size: int = 512
     chunk_overlap: int = 50
 
