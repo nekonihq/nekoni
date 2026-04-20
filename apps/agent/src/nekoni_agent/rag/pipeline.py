@@ -2,11 +2,25 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+from functools import lru_cache
 from pathlib import Path
 
 from ..config import settings
 from . import embedder, store
+
+_DOCLING_EXTENSIONS = {
+    ".pdf", ".docx", ".xlsx", ".pptx", ".html",
+    ".png", ".jpg", ".jpeg", ".tiff", ".bmp",
+}
+
+
+@lru_cache(maxsize=1)
+def _get_converter():
+    from docling.document_converter import DocumentConverter
+
+    return DocumentConverter()
 
 
 def _chunk_text(text: str, chunk_size: int = 512, overlap: int = 50) -> list[str]:
@@ -44,28 +58,22 @@ class RAGPipeline:
     async def ingest_file(
         self, path: str | Path, source: str | None = None
     ) -> tuple[str, int]:
-        """Ingest a file (text, pdf, etc.)."""
+        """Ingest a file (text, pdf, docx, images, etc.)."""
         path = Path(path)
-        if path.suffix.lower() == ".pdf":
-            text = self._extract_pdf(path)
+        if path.suffix.lower() in _DOCLING_EXTENSIONS:
+            loop = asyncio.get_running_loop()
+            text = await loop.run_in_executor(None, self._extract_document, path)
         else:
             text = path.read_text(errors="ignore")
         return await self.ingest_text(text, source=source or str(path.name))
 
-    def _extract_pdf(self, path: Path) -> str:
-        try:
-            import pypdf
-        except ImportError:
+    def _extract_document(self, path: Path) -> str:
+        converter = _get_converter()
+        result = converter.convert(str(path))
+        text = result.document.export_to_markdown()
+        if not text.strip():
             raise RuntimeError(
-                "pypdf is required for PDF ingestion. "
-                "Install it with: pip install pypdf"
-            )
-        reader = pypdf.PdfReader(str(path))
-        text = "\n".join(page.extract_text() or "" for page in reader.pages).strip()
-        if not text:
-            raise RuntimeError(
-                "No text could be extracted from this PDF — "
-                "it may be scanned/image-based or encrypted."
+                f"No content could be extracted from {path.name}."
             )
         return text
 

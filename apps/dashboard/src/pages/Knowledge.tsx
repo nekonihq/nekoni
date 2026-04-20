@@ -112,7 +112,7 @@ export const KnowledgePage = () => {
             ref={inputRef}
             type="file"
             multiple
-            accept=".txt,.md,.pdf,.csv"
+            accept=".txt,.md,.csv,.pdf,.docx,.xlsx,.pptx,.html,.png,.jpg,.jpeg,.tiff,.bmp"
             style={{ display: 'none' }}
             onChange={(e) => handleFiles(e.target.files)}
           />
@@ -160,7 +160,7 @@ export const KnowledgePage = () => {
         <Text color="gray" size="2">
           {uploading
             ? 'Uploading…'
-            : 'Drop files here or click to upload (.txt, .md, .pdf, .csv)'}
+            : 'Drop files here or click to upload (.pdf, .docx, .xlsx, .pptx, .html, .txt, .md, .csv, images)'}
         </Text>
       </Box>
 

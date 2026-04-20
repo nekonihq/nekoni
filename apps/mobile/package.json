@@ -18,6 +18,7 @@
     "expo-secure-store": "~55.0.9",
     "expo-sqlite": "~55.0.11",
     "expo-status-bar": "~55.0.4",
+    "expo-updates": "~55.0.20",
     "react": "19.2.0",
     "react-native": "0.83.2",
     "react-native-toast-message": "^2.3.3",
