@@ -19,7 +19,7 @@ http://localhost:8000
 | `POST`   | `/api/pair/approve`           | Approve or reject pairing                      |
 | `GET`    | `/api/pair/devices`           | Approved devices                               |
 | `DELETE` | `/api/pair/devices/{key}`     | Revoke a device                                |
-| `POST`   | `/api/ingest`                 | Ingest a document into RAG                     |
+| `POST`   | `/api/ingest`                 | Ingest a document into RAG (PDF, DOCX, XLSX, PPTX, HTML, images, text) |
 | `GET`    | `/api/rag/documents`          | List all RAG documents                         |
 | `DELETE` | `/api/rag/documents/{doc_id}` | Delete a document                              |
 | `GET`    | `/api/skills`                 | List all skills                                |
@@ -44,6 +44,8 @@ http://localhost:8000
 curl -X POST http://localhost:8000/api/ingest \
   -F "file=@/path/to/document.pdf"
 ```
+
+Supported formats: `.pdf` (including scanned, with OCR), `.docx`, `.xlsx`, `.pptx`, `.html`, `.png`, `.jpg`, `.jpeg`, `.tiff`, `.bmp`, `.txt`, `.md`, `.csv`.
 
 Example response:
 

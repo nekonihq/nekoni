@@ -20,7 +20,7 @@ No cloud. No subscriptions. No data leaving your hardware.
 - **Phone access** — connect from mobile or web over direct WebRTC DataChannel
 - **No cloud relay for data** — public signaling is used only for SDP/ICE exchange
 - **Key-pair security** — Ed25519 identity keys and mutual authentication
-- **RAG** — ingest documents and query them from chat
+- **RAG** — ingest documents (PDF, DOCX, XLSX, PPTX, HTML, images) with OCR and query them from chat
 - **Skills** — reusable prompt templates with cron scheduling
 - **Extensible** — add tools in a few lines of Python
 - **Observable** — live trace stream in the dashboard

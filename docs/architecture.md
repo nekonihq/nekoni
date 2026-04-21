@@ -78,7 +78,7 @@ The React Native app provides:
 
 | Component  | Tech                                                                     |
 | ---------- | ------------------------------------------------------------------------ |
-| Agent      | Python 3.12 · FastAPI · uvicorn · aiortc                                 |
+| Agent      | Python 3.12 · FastAPI · uvicorn · aiortc · Docling (OCR + document parsing) |
 | Signaling  | Node.js 22 · TypeScript · ws · express                                   |
 | Dashboard  | React 19 · Vite · TypeScript · Radix UI Themes                           |
 | Mobile     | React Native · Expo · react-native-webrtc                                |
