@@ -14,9 +14,21 @@ cd "$APP_DIR"
 export PATH="$HOME/.local/share/fnm:$PATH"
 eval "$(fnm env)"
 
+# Keep in sync with setup-lightsail.sh. Re-point the system-wide symlinks and
+# `pm2 update` so the PM2 daemon itself respawns on the new node.
+NODE_VERSION="22.23.4"
+fnm install "$NODE_VERSION"
+fnm use "$NODE_VERSION"
+fnm default "$NODE_VERSION"
+NODE_DIR="$(dirname "$(which node)")"
+sudo ln -sf "$NODE_DIR/node" /usr/local/bin/node
+sudo ln -sf "$NODE_DIR/npm"  /usr/local/bin/npm
+npm install -g pnpm pm2 --silent
+
 pnpm install --ignore-workspace
 pnpm build
 pm2 restart "$SERVICE"
+pm2 update
 
 echo ""
 pm2 status "$SERVICE"

@@ -30,15 +30,17 @@ sudo apt-get update -q
 sudo apt-get install -y -q git curl rsync unzip
 
 # ── Node.js 22 via fnm ────────────────────────────────────────────────────────
-echo "[2/4] Installing Node.js 22..."
+# Pinned: >= 22.23.4 fixes CVE-2026-111497 (Node2Shell, Brotli RCE).
+NODE_VERSION="22.23.4"
+echo "[2/4] Installing Node.js $NODE_VERSION..."
 if ! command -v fnm &>/dev/null; then
   curl -fsSL https://fnm.vercel.app/install | bash
 fi
 export PATH="$HOME/.local/share/fnm:$PATH"
 eval "$(fnm env)"
-fnm install 22
-fnm use 22
-fnm default 22
+fnm install "$NODE_VERSION"
+fnm use "$NODE_VERSION"
+fnm default "$NODE_VERSION"
 
 # Make node available system-wide for pm2 startup hook
 NODE_BIN="$(which node)"
