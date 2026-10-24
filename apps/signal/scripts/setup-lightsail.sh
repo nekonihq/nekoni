@@ -54,7 +54,7 @@ npm install -g pnpm pm2 --silent
 echo "[3/4] Installing dependencies and building..."
 cd "$APP_DIR"
 # --ignore-workspace treats the signal app as standalone, skipping workspace:* resolution
-pnpm install --ignore-workspace
+pnpm install --ignore-workspace --config.strict-dep-builds=false
 pnpm build
 
 # ── PM2 ───────────────────────────────────────────────────────────────────────
