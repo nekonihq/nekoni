@@ -43,8 +43,8 @@ fnm use "$NODE_VERSION"
 fnm default "$NODE_VERSION"
 
 # Make node available system-wide for pm2 startup hook
-NODE_BIN="$(which node)"
-NODE_DIR="$(dirname "$NODE_BIN")"
+# fnm's real install dir, not `which node` (a per-shell fnm_multishells path).
+NODE_DIR="$HOME/.local/share/fnm/node-versions/v$NODE_VERSION/installation/bin"
 sudo ln -sf "$NODE_DIR/node" /usr/local/bin/node
 sudo ln -sf "$NODE_DIR/npm"  /usr/local/bin/npm
 
