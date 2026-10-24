@@ -25,10 +25,17 @@ sudo ln -sf "$NODE_DIR/node" /usr/local/bin/node
 sudo ln -sf "$NODE_DIR/npm"  /usr/local/bin/npm
 npm install -g pnpm pm2 --silent
 
-pnpm install --ignore-workspace
+# Newer pnpm fails on unapproved build scripts; esbuild's is only for tsx
+# (dev), the production build is plain tsc.
+pnpm install --ignore-workspace --config.strict-dep-builds=false
 pnpm build
 pm2 restart "$SERVICE"
 pm2 update
+
+# The systemd unit pins the node bin dir in its PATH; regenerate it so a
+# reboot resurrects PM2 on this node, not the previous version.
+pm2 save
+sudo env PATH="$PATH:$NODE_DIR" "$(which pm2)" startup systemd -u "$USER" --hp "$HOME"
 
 echo ""
 pm2 status "$SERVICE"
